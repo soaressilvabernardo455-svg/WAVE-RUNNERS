@@ -1,21 +1,64 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#061d38"><title>WAVE RUNNER</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/mobile.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#062338">
+<title>WAVE RUNNER — RIVER RUSH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/mobile.css">
 </head>
-<body>
-<div id="loading"><div class="loader-mark">W</div><div class="loading-title">WAVE RUNNER</div><div class="loading-sub">PREPARANDO O OCEANO</div><div class="load-track"><i></i></div></div>
-<div id="game"></div><div id="vignette"></div>
-<header class="topbar"><div class="brand"><span class="brand-icon">W</span><span>WAVE<span class="brand-blue">RUNNER</span><small>OCEAN RUSH</small></span></div><div class="top-right"><span class="status-dot"></span><span id="net-status">CONECTANDO</span><span class="stat-pill">PING <b id="ping">--</b></span><span class="stat-pill">FPS <b id="fps">--</b></span></div></header>
-<section class="race-hud"><div class="position-card"><small>SUA POSIÇÃO</small><strong id="position">1<sup>º</sup><span>/3</span></strong></div><div class="race-center"><div class="race-label">DISTÂNCIA <b id="distance">0 m</b></div><div class="progress-track"><i id="race-progress"></i></div><div class="race-players"><span>VOCÊ</span><span>RIVAL 02</span><span>RIVAL 03</span></div></div><div class="coin-card"><span class="coin-symbol">◆</span><b id="coins">000</b><small>MOEDAS</small></div></section>
+<body class="in-lobby">
+<div id="loading"><div class="loader-mark">W</div><div class="loading-title">WAVE RUNNER</div><div class="loading-sub">PREPARANDO O RIO</div><div class="load-track"><i></i></div></div>
+<div id="game"></div>
+<div id="vignette"></div>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-icon">W</span><span>WAVE<span class="brand-blue">RUNNER</span><small>RIVER RUSH</small></span></div>
+  <div class="top-right"><span class="status-dot"></span><span id="net-status">CONECTANDO</span><span class="stat-pill">PING <b id="ping">--</b></span><span class="stat-pill">FPS <b id="fps">--</b></span></div>
+</header>
+
+<section id="lobby" class="lobby">
+  <div class="lobby-glow"></div>
+  <div class="lobby-content">
+    <div class="lobby-eyebrow"><span class="eyebrow-line"></span> CORRIDA MULTIPLAYER <span class="eyebrow-line"></span></div>
+    <div class="lobby-title">WAVE<span>RUNNER</span></div>
+    <div class="lobby-subtitle">RIVER RUSH <i>•</i> TEMPORADA 01</div>
+    <p class="lobby-copy">Desça pelo rio, passe pelas casas e pontes, desvie dos barcos e colete garrafas para liberar o turbo.</p>
+    <div class="lobby-panel">
+      <div class="lobby-panel-head"><div><small>MODO DE JOGO</small><strong>CORRIDA NO RIO</strong></div><span class="mode-tag">3 PILOTOS</span></div>
+      <div class="lobby-online"><span class="online-pulse"></span><span id="lobby-status">CONECTANDO</span><b id="lobby-player-count">1 / 3 PILOTOS NA SALA</b></div>
+      <div id="lobby-slots" class="lobby-slots"></div>
+      <button id="start-game" class="start-button">ENTRAR NA CORRIDA <span>›</span></button>
+      <button id="training-mode" class="training-button">TREINO LOCAL</button>
+    </div>
+    <div class="lobby-controls"><span>↔ ARRASTE PARA TROCAR DE FAIXA</span><span>↑ PULE</span><span>↓ DESLIZE</span></div>
+    <div class="lobby-footer">WAVE RUNNER <i>—</i> OCEAN TO RIVER</div>
+  </div>
+</section>
+
+<section class="race-hud">
+  <div class="position-card"><small>SUA POSIÇÃO</small><strong id="position">1<sup>º</sup><span>/3</span></strong></div>
+  <div class="race-center"><div class="race-label">DISTÂNCIA <b id="distance">0 m</b></div><div class="progress-track"><i id="race-progress"></i></div><div class="race-players"><span>VOCÊ</span><span>RIVAL 02</span><span>RIVAL 03</span></div></div>
+  <div class="coin-card"><span class="coin-symbol">◆</span><b id="coins">000</b><small>MOEDAS</small></div>
+</section>
+
 <div class="toast" id="toast"></div>
-<section class="turbo-panel"><div class="turbo-head"><span>ENERGIA DE TURBO</span><b id="bottle-count">0 / 5</b></div><div class="turbo-cells" id="turbo-cells"><i></i><i></i><i></i><i></i><i></i></div><button id="turbo-button" class="turbo-button"><span>⚡</span> TURBO <small>5 GARRAFAS PARA CARREGAR</small></button></section>
-<div class="controls-hint" id="controls-hint">← → MOVER <span>•</span> ESPAÇO PULAR <span>•</span> ↓ DESLIZAR</div>
-<div class="mobile-controls"><button id="left" aria-label="Esquerda">‹</button><button id="jump" aria-label="Pular">↑</button><button id="slide" aria-label="Deslizar">↓</button><button id="right" aria-label="Direita">›</button></div>
-<div class="bottom-left"><div class="weather-chip">☀ <span>MAR ABERTO</span></div><div class="speed-chip"><small>VELOCIDADE</small><b id="speed">42</b><small>KM/H</small></div></div>
-<div id="finish" class="modal hidden"><div class="modal-card"><div class="finish-kicker">FIM DE CORRIDA</div><h1 id="finish-title">BOA ONDA!</h1><p id="finish-copy">Você completou sua sessão.</p><div class="finish-stats"><div><small>DISTÂNCIA</small><b id="final-distance">0 m</b></div><div><small>MOEDAS</small><b id="final-coins">0</b></div></div><button id="restart">CORRER NOVAMENTE</button></div></div>
+<section class="turbo-panel">
+  <div class="turbo-head"><span>ENERGIA DE TURBO</span><b id="bottle-count">0 / 5</b></div>
+  <div class="turbo-cells"><i></i><i></i><i></i><i></i><i></i></div>
+  <button id="turbo-button" class="turbo-button"><span>⚡</span> TURBO <small>5 GARRAFAS PARA CARREGAR</small></button>
+</section>
+<div class="controls-hint">← → TROCAR DE FAIXA <span>•</span> ESPAÇO PULAR <span>•</span> ↓ DESLIZAR</div>
+<div class="gesture-hint">ARRASTE NA TELA PARA SE MOVER</div>
+<div class="bottom-left"><div class="weather-chip">◈ <span>RIO DA CIDADE</span></div><div class="speed-chip"><small>VELOCIDADE</small><b id="speed">79</b><small>KM/H</small></div></div>
+
+<div id="finish" class="modal hidden">
+  <div class="modal-card"><div class="finish-kicker">FIM DE CORRIDA</div><h1 id="finish-title">BOA ONDA!</h1><p id="finish-copy">Você completou sua sessão.</p><div class="finish-stats"><div><small>DISTÂNCIA</small><b id="final-distance">0 m</b></div><div><small>MOEDAS</small><b id="final-coins">0</b></div></div><button id="restart">CORRER NOVAMENTE</button></div>
+</div>
 <script type="module" src="/src/main.js"></script>
-</body></html>
+</body>
+</html>
