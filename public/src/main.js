@@ -218,16 +218,65 @@ function makeBridge(z, index) {
   scene.add(g);
 }
 
-for (let i = 0; i < 11; i++) {
+function makeRiverTree(side, z, index) {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.34, 2.8, 7), wood);
+  trunk.position.y = 1.25;
+  g.add(trunk);
+  const crownMat = material([0x2d7659, 0x438b62, 0x5b9b67][index % 3], 0.92);
+  for (let i = 0; i < 3; i++) {
+    const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(1.25 - i * 0.12, 1), crownMat);
+    crown.position.set((i - 1) * 0.55, 2.8 + (i % 2) * 0.45, (i % 2) * 0.35);
+    crown.castShadow = true;
+    g.add(crown);
+  }
+  const planter = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.18, 0.48, 8), stone);
+  planter.position.y = 0.12;
+  g.add(planter);
+  g.position.set(side * (31.5 + (index % 2) * 1.4), -0.45, z);
+  scene.add(g);
+}
+
+function makeDock(side, z, index) {
+  const g = new THREE.Group();
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.28, 3.6), wood);
+  deck.position.set(-side * 1.1, 0.18, 0);
+  deck.castShadow = true;
+  g.add(deck);
+  for (let x = -3.2; x <= 1.2; x += 1.1) {
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.035, 3.45), material(0xb58a61));
+    plank.position.set(x, 0.34, 0);
+    g.add(plank);
+  }
+  for (const x of [-3.25, 1.05]) {
+    for (const zPost of [-1.35, 1.35]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, 1.65, 7), wood);
+      post.position.set(x, -0.42, zPost);
+      g.add(post);
+    }
+  }
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.09, 8, 20), material(index % 2 ? 0xffb75d : 0xf3eee0, 0.48));
+  ring.position.set(-side * 1.1, 0.58, 1.0);
+  ring.rotation.x = Math.PI / 2;
+  g.add(ring);
+  g.position.set(side * 13.2, 0, z);
+  scene.add(g);
+}
+
+for (let i = 0; i < 14; i++) {
   const z = -28 - i * 35;
   makeHouse(-1, z, i);
   makeHouse(1, z - 12, i + 3);
   makeLamp(-1, z - 16);
   makeLamp(1, z - 5);
+  if (i % 2 === 0) makeRiverTree(-1, z - 10, i);
+  if (i % 2 === 1) makeRiverTree(1, z - 18, i);
+  if (i % 3 === 0) makeDock(i % 2 ? -1 : 1, z - 24, i);
 }
 makeBridge(-105, 0);
 makeBridge(-225, 1);
 makeBridge(-345, 2);
+makeBridge(-465, 3);
 
 // Small submerged posts and old stone details add depth below the waterline.
 for (const side of [-1, 1]) {
@@ -454,7 +503,7 @@ function changeLane(direction) {
   state.x = LANES[state.lane];
   if (oldLane !== state.lane) {
     player.position.x = state.x;
-    player.rotation.z = direction * -0.12;
+    player.rotation.z = direction * -0.2;
   }
 }
 function jump() {
@@ -521,7 +570,6 @@ addEventListener('keydown', event => {
   if (event.code === 'ArrowRight' || event.code === 'KeyD') changeLane(1);
   if (event.code === 'ArrowUp' || event.code === 'Space' || event.code === 'KeyW') jump();
   if (event.code === 'ArrowDown' || event.code === 'KeyS') slide();
-  if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') turbo();
 });
 addEventListener('keyup', event => heldKeys.delete(event.code));
 
@@ -546,6 +594,10 @@ let pingClock = 0;
 let fpsFrames = 0;
 let fpsClock = 0;
 let fpsValue = 60;
+let lowFpsTime = 0;
+let highFpsTime = 0;
+let waterUpdateClock = 0;
+let renderScale = Math.min(devicePixelRatio || 1, isMobile ? 1.25 : 1.65);
 let last = performance.now();
 
 function connect() {
@@ -632,7 +684,11 @@ function updateRiver(time) {
 
 function update(dt, time) {
   state.elapsed += dt;
-  updateRiver(time);
+  waterUpdateClock += dt;
+  if (waterUpdateClock >= 1 / 30) {
+    updateRiver(time);
+    waterUpdateClock %= 1 / 30;
+  }
 
   if (state.running && state.alive) {
     state.distance += state.speed * dt;
@@ -744,6 +800,28 @@ function frame(now) {
   if (fpsClock >= 0.65) {
     fpsValue = Math.round(fpsFrames / fpsClock);
     ui.fps.textContent = fpsValue;
+    if (fpsValue < 28) {
+      lowFpsTime += fpsClock;
+      highFpsTime = 0;
+    } else if (fpsValue > 48) {
+      highFpsTime += fpsClock;
+      lowFpsTime = Math.max(0, lowFpsTime - fpsClock * 0.5);
+    } else {
+      lowFpsTime = Math.max(0, lowFpsTime - fpsClock * 0.25);
+      highFpsTime = 0;
+    }
+    if (lowFpsTime > 3 && renderScale > 0.95) {
+      renderScale = 0.95;
+      renderer.setPixelRatio(renderScale);
+      renderer.setSize(innerWidth, innerHeight, false);
+      lowFpsTime = 0;
+      toast('GRÁFICOS AJUSTADOS PARA MAIS FPS');
+    } else if (highFpsTime > 8 && renderScale < Math.min(devicePixelRatio || 1, isMobile ? 1.25 : 1.65)) {
+      renderScale = Math.min(devicePixelRatio || 1, isMobile ? 1.25 : 1.65);
+      renderer.setPixelRatio(renderScale);
+      renderer.setSize(innerWidth, innerHeight, false);
+      highFpsTime = 0;
+    }
     fpsFrames = 0;
     fpsClock = 0;
   }
@@ -762,5 +840,6 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, matchMedia('(max-width: 700px)').matches ? 1.35 : 1.8));
+  renderScale = Math.min(devicePixelRatio || 1, matchMedia('(max-width: 700px)').matches ? 1.25 : 1.65);
+  renderer.setPixelRatio(renderScale);
 });
