@@ -96,7 +96,7 @@ wss.on('connection', ws => {
   ws.on('error', () => {});
 });
 
-// Keep connections alive on mobile networks and publish compact player snapshots.
+// Heartbeat leve para redes móveis e snapshots em ritmo suficiente para a corrida.
 const heartbeat = setInterval(() => {
   for (const ws of wss.clients) {
     if (ws.isAlive === false) {
@@ -106,10 +106,16 @@ const heartbeat = setInterval(() => {
     ws.isAlive = false;
     ws.ping();
   }
+}, 20000);
+
+const snapshotLoop = setInterval(() => {
   for (const room of rooms.values()) {
     broadcast(room, { type: 'snapshot', players: snapshot(room) });
   }
-}, 250);
+}, 150);
 
 server.listen(PORT, '0.0.0.0', () => console.log('Wave Runner online on port ' + PORT));
-server.on('close', () => clearInterval(heartbeat));
+server.on('close', () => {
+  clearInterval(heartbeat);
+  clearInterval(snapshotLoop);
+});

@@ -241,7 +241,7 @@ for (const side of [-1, 1]) {
 function makeRider(boardColor = 0xff7047) {
   const group = new THREE.Group();
   const board = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.7, 5, 12), material(boardColor, 0.25, 0.22));
-  board.scale.set(0.84, 0.16, 1.0);
+  board.scale.set(0.84, 1.0, 0.16);
   board.rotation.x = Math.PI / 2;
   board.position.y = 0.25;
   board.castShadow = true;
@@ -334,7 +334,7 @@ function makeWatercraft(jet = false) {
     new THREE.CapsuleGeometry(jet ? 0.62 : 0.82, jet ? 1.8 : 2.7, 5, 12),
     material(jet ? 0xf05b52 : 0xf2eee0, 0.28, 0.18)
   );
-  hull.scale.set(0.86, 0.42, 1);
+  hull.scale.set(0.86, 1, 0.42);
   hull.rotation.x = Math.PI / 2;
   hull.position.y = 0.28;
   hull.castShadow = true;
@@ -602,7 +602,7 @@ function connect() {
     network.onclose = () => {
       network = null;
       playerId = null;
-      setConnection('RECONectando', '#ffc65c');
+      setConnection('RECONECTANDO', '#ffc65c');
       updateLobbyRoster();
       clearTimeout(reconnectTimer);
       reconnectTimer = setTimeout(connect, 4500);
