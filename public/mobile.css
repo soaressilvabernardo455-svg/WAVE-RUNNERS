@@ -1,0 +1,14 @@
+@media(max-width:700px){
+  .mobile-controls{justify-content:flex-start;gap:6px;padding:0 10px;width:190px;bottom:110px}
+  .mobile-controls button{width:40px;height:46px;border-radius:13px;font-size:23px}
+  .turbo-panel{width:115px;right:10px;bottom:12px;padding:8px}
+  .turbo-button{font-size:12px;padding:7px 4px}
+  .turbo-button small{font-size:6px}
+}
+@media(max-width:360px){
+  .mobile-controls{width:176px;gap:4px;padding:0 8px}
+  .mobile-controls button{width:40px;height:44px}
+  .turbo-panel{width:108px;right:8px}
+  .top-right{gap:4px}
+  .top-right .stat-pill{padding:5px}
+}
