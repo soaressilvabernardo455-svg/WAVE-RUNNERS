@@ -34,6 +34,7 @@
       <div id="lobby-slots" class="lobby-slots"></div>
       <button id="start-game" class="start-button">ENTRAR NA CORRIDA <span>›</span></button>
       <button id="training-mode" class="training-button">TREINO LOCAL</button>
+      <button id="shop-open-lobby" class="training-button shop-lobby-button">ABRIR LOJA DE JET SKI</button>
     </div>
     <div class="lobby-feature-grid">
       <div class="lobby-feature"><b>03</b><span>FAIXAS</span><small>DESVIO RÁPIDO</small></div>
@@ -53,6 +54,7 @@
 
 <div class="toast" id="toast"></div>
 <section class="turbo-panel">
+  <button id="shop-open" class="shop-hud-button">GARAGEM / LOJA</button>
   <div class="turbo-head"><span>ENERGIA DE TURBO</span><b id="bottle-count">0 / 5</b></div>
   <div class="turbo-cells"><i></i><i></i><i></i><i></i><i></i></div>
   <button id="turbo-button" class="turbo-button"><span>⚡</span> TURBO <small>5 GARRAFAS PARA CARREGAR</small></button>
@@ -62,8 +64,23 @@
 <div class="bottom-left"><div class="weather-chip">◈ <span>RIO DA CIDADE</span></div><div class="speed-chip"><small>VELOCIDADE</small><b id="speed">79</b><small>KM/H</small></div></div>
 
 <div id="finish" class="modal hidden">
-  <div class="modal-card"><div class="finish-kicker">FIM DE CORRIDA</div><h1 id="finish-title">BOA ONDA!</h1><p id="finish-copy">Você completou sua sessão.</p><div class="finish-stats"><div><small>DISTÂNCIA</small><b id="final-distance">0 m</b></div><div><small>MOEDAS</small><b id="final-coins">0</b></div></div><button id="restart">CORRER NOVAMENTE</button></div>
+  <div class="modal-card"><div class="finish-kicker">FIM DE CORRIDA</div><h1 id="finish-title">BOA ONDA!</h1><p id="finish-copy">Você completou sua sessão.</p><div class="finish-stats"><div><small>DISTÂNCIA</small><b id="final-distance">0 m</b></div><div><small>MOEDAS</small><b id="final-coins">0</b></div></div><button id="restart">CORRER NOVAMENTE</button><button id="shop-from-finish" class="shop-close">ABRIR LOJA</button></div>
 </div>
+
+<section id="shop-modal" class="modal hidden">
+  <div class="modal-card shop-card">
+    <div class="finish-kicker">GARAGEM RIVER RUSH</div>
+    <h1>LOJA</h1>
+    <p class="shop-balance-line">SEU SALDO: <b id="shop-balance">0</b> MOEDAS</p>
+    <div class="shop-item">
+      <div class="shop-item-icon">⚡</div>
+      <div class="shop-item-copy"><strong>JET SKI ESPECIAL</strong><span>Imunidade a obstáculos: ao encostar, destrói barcos e jet skis sem encerrar a corrida.</span></div>
+    </div>
+    <button id="buy-special" class="shop-buy-button">COMPRAR • 100 MOEDAS</button>
+    <p id="shop-status" class="shop-status">Colete moedas durante as corridas para desbloquear o jet ski.</p>
+    <button id="shop-close" class="shop-close">VOLTAR AO JOGO</button>
+  </div>
+</section>
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>
