@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#061d38"><title>WAVE RUNNER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="loading"><div class="loader-mark">W</div><div class="loading-title">WAVE RUNNER</div><div class="loading-sub">PREPARANDO O OCEANO</div><div class="load-track"><i></i></div></div>
+<div id="game"></div>
+<div id="vignette"></div>
+<header class="topbar"><div class="brand"><span class="brand-icon">W</span><span>WAVE<span class="brand-blue">RUNNER</span><small>OCEAN RUSH</small></span></div><div class="top-right"><span class="status-dot"></span><span id="net-status">OFFLINE / TREINO</span><span class="stat-pill">PING <b id="ping">--</b></span><span class="stat-pill">FPS <b id="fps">--</b></span></div></header>
+<section class="race-hud"><div class="position-card"><small>SUA POSIÇÃO</small><strong id="position">1<sup>º</sup><span>/3</span></strong></div><div class="race-center"><div class="race-label">DISTÂNCIA <b id="distance">0 m</b></div><div class="progress-track"><i id="race-progress"></i></div><div class="race-players"><span>VOCÊ</span><span>RIVAL 02</span><span>RIVAL 03</span></div></div><div class="coin-card"><span class="coin-symbol">◆</span><b id="coins">000</b><small>MOEDAS</small></div></section>
+<div class="toast" id="toast"></div>
+<section class="turbo-panel"><div class="turbo-head"><span>ENERGIA DE TURBO</span><b id="bottle-count">0 / 5</b></div><div class="turbo-cells" id="turbo-cells"><i></i><i></i><i></i><i></i><i></i></div><button id="turbo-button" class="turbo-button"><span>⚡</span> TURBO <small>PRONTO EM 5 GARRAFAS</small></button></section>
+<div class="controls-hint" id="controls-hint">← → MOVER <span>•</span> ESPAÇO PULAR <span>•</span> ↓ DESLIZAR</div>
+<div class="mobile-controls"><button id="left" aria-label="Esquerda">‹</button><button id="jump" aria-label="Pular">↑</button><button id="slide" aria-label="Deslizar">↓</button><button id="right" aria-label="Direita">›</button></div>
+<div class="bottom-left"><div class="weather-chip">☀ <span>MAR ABERTO</span></div><div class="speed-chip"><small>VELOCIDADE</small><b id="speed">42</b><small>KM/H</small></div></div>
+<div id="finish" class="modal hidden"><div class="modal-card"><div class="finish-kicker">FIM DE CORRIDA</div><h1 id="finish-title">BOA ONDA!</h1><p id="finish-copy">Você completou sua sessão.</p><div class="finish-stats"><div><small>DISTÂNCIA</small><b id="final-distance">0 m</b></div><div><small>MOEDAS</small><b id="final-coins">0</b></div></div><button id="restart">CORRER NOVAMENTE</button></div></div>
+<script type="module" src="/src/main.js"></script>
+</body></html>
