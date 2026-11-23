@@ -7,8 +7,8 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x77c5df);
 scene.fog = new THREE.Fog(0x77c5df, 82, 330);
 
-const camera = new THREE.PerspectiveCamera(57, innerWidth / innerHeight, 0.1, 600);
-camera.position.set(0, 6.2, 11.5);
+const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 700);
+camera.position.set(0, 6.8, 13.6);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1.35 : 1.8));
@@ -289,66 +289,129 @@ for (const side of [-1, 1]) {
 
 function makeRider(boardColor = 0xff7047) {
   const group = new THREE.Group();
-  const board = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.7, 5, 12), material(boardColor, 0.25, 0.22));
+  const boardMaterial = material(boardColor, 0.22, 0.32);
+  const board = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.7, 6, 14), boardMaterial);
   board.scale.set(0.84, 1.0, 0.16);
   board.rotation.x = Math.PI / 2;
   board.position.y = 0.25;
   board.castShadow = true;
   group.add(board);
 
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.055, 2.55), material(0x172f48, 0.34, 0.18));
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.06, 2.55), material(0x172f48, 0.28, 0.28));
   deck.position.y = 0.39;
   group.add(deck);
-  const centerStripe = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.025, 2.45), material(0xffdf8c));
+  const centerStripe = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.028, 2.42), material(0xffdf8c, 0.3, 0.4));
   centerStripe.position.y = 0.43;
   group.add(centerStripe);
+  const noseMark = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.38, 5), material(0xffffff, 0.24, 0.2));
+  noseMark.rotation.x = -Math.PI / 2;
+  noseMark.position.set(0, 0.43, -1.18);
+  group.add(noseMark);
   for (const side of [-1, 1]) {
-    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.38), material(0xe6edf0));
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.38), material(0xe6edf0, 0.32, 0.25));
     fin.position.set(side * 0.23, 0.04, 1.05);
     group.add(fin);
   }
 
-  const skin = material(0x9a6146, 0.83);
-  const shirt = material(0xffc84d, 0.78);
-  const shorts = material(0x183c62, 0.7);
-  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.36, 0.58, 5, 10), shirt);
+  const body = new THREE.Group();
+  group.add(body);
+  const skin = material(0x9a6146, 0.78);
+  const shirt = material(0xffc84d, 0.72);
+  const shorts = material(0x183c62, 0.66);
+  const darkCloth = material(0x123149, 0.72);
+
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.36, 0.58, 6, 12), shirt);
   torso.position.y = 1.38;
   torso.castShadow = true;
-  group.add(torso);
-  const vest = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.66, 0.42), material(0xf4ad36));
-  vest.position.set(0, 1.4, 0.02);
-  group.add(vest);
-  const belt = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.12, 0.42), material(0x253b52));
-  belt.position.y = 1.04;
-  group.add(belt);
+  body.add(torso);
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.31, 20, 16), skin);
+  const vest = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.68, 0.43), material(0xf2a930, 0.58));
+  vest.position.set(0, 1.4, 0.02);
+  vest.castShadow = true;
+  body.add(vest);
+  const vestStripe = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.105, 0.445), material(0xffedac, 0.5));
+  vestStripe.position.set(0, 1.5, -0.01);
+  body.add(vestStripe);
+  const belt = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.12, 0.43), darkCloth);
+  belt.position.y = 1.04;
+  body.add(belt);
+  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.13, 0.045), material(0xffdc83, 0.3, 0.45));
+  buckle.position.set(0, 1.04, -0.24);
+  body.add(buckle);
+
+  // A compact flotation pack makes the rider readable from the chase camera.
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.52, 0.27), material(0x1b536c, 0.65, 0.1));
+  pack.position.set(0, 1.43, 0.31);
+  pack.castShadow = true;
+  body.add(pack);
+  const packTop = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.12, 0.29), material(0x65d9e7, 0.42, 0.15));
+  packTop.position.set(0, 1.72, 0.31);
+  body.add(packTop);
+  for (const side of [-1, 1]) {
+    const strap = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.7, 0.055), material(0x263f50, 0.6));
+    strap.position.set(side * 0.25, 1.42, 0.255);
+    strap.rotation.z = side * -0.12;
+    body.add(strap);
+  }
+  const numberPlate = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.2, 0.04), material(0x0e3d57, 0.42));
+  numberPlate.position.set(0, 1.36, 0.465);
+  body.add(numberPlate);
+  const numberLine = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.035, 0.02), material(0x77edff, 0.35, 0.25));
+  numberLine.position.set(0, 1.36, 0.491);
+  body.add(numberLine);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.31, 24, 18), skin);
   head.position.y = 2.14;
   head.castShadow = true;
-  group.add(head);
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.325, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.56), material(0x25232b));
+  body.add(head);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.325, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.56), material(0x25232b, 0.9));
   hair.position.set(0, 2.24, 0.02);
-  group.add(hair);
-  const facePatch = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.1, 0.04), material(0x422d29));
-  facePatch.position.set(0, 2.12, -0.285);
-  group.add(facePatch);
+  body.add(hair);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.2, 10), skin);
+  neck.position.y = 1.91;
+  body.add(neck);
 
+  const armPivots = [];
+  const legPivots = [];
   for (const side of [-1, 1]) {
-    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.115, 0.54, 4, 8), skin);
-    arm.position.set(side * 0.46, 1.4, -0.03);
-    arm.rotation.z = side * 0.46;
-    group.add(arm);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), skin);
-    hand.position.set(side * 0.64, 1.09, -0.04);
-    group.add(hand);
-    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.42, 4, 8), shorts);
-    leg.position.set(side * 0.17, 0.76, 0.05);
-    leg.rotation.x = -0.12;
-    group.add(leg);
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.13, 0.36), material(0x202b37));
-    foot.position.set(side * 0.17, 0.48, -0.16);
-    group.add(foot);
+    const armPivot = new THREE.Group();
+    armPivot.position.set(side * 0.43, 1.68, 0);
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.112, 0.48, 5, 9), skin);
+    arm.position.set(side * 0.035, -0.31, -0.015);
+    arm.rotation.z = side * -0.1;
+    arm.castShadow = true;
+    armPivot.add(arm);
+    const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.115, 0.15, 8), material(0xd99d72));
+    wrist.position.set(side * 0.045, -0.57, -0.02);
+    armPivot.add(wrist);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 9), skin);
+    hand.position.set(side * 0.05, -0.66, -0.025);
+    armPivot.add(hand);
+    body.add(armPivot);
+    armPivots.push(armPivot);
+
+    const legPivot = new THREE.Group();
+    legPivot.position.set(side * 0.17, 0.91, 0.04);
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.38, 5, 9), shorts);
+    leg.position.y = -0.25;
+    leg.castShadow = true;
+    legPivot.add(leg);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.15, 0.39), material(0x26333e, 0.55));
+    shoe.position.set(0, -0.49, -0.13);
+    legPivot.add(shoe);
+    const sole = new THREE.Mesh(new THREE.BoxGeometry(0.245, 0.035, 0.39), material(0xe5e9e5, 0.78));
+    sole.position.set(0, -0.57, -0.13);
+    legPivot.add(sole);
+    body.add(legPivot);
+    legPivots.push(legPivot);
   }
+
+  group.userData.body = body;
+  group.userData.armPivots = armPivots;
+  group.userData.legPivots = legPivots;
+  group.userData.board = board;
+  group.userData.frustumCulled = false;
+  group.traverse(node => { if (node.isMesh) node.frustumCulled = false; });
   return group;
 }
 
@@ -358,6 +421,17 @@ scene.add(player);
 player.position.set(0, 0, 3);
 
 const remotePlayers = new Map();
+
+// Reusable wake particles. Kept as a tiny pool to avoid allocating meshes every frame.
+const wakeParticles = [];
+for (let i = 0; i < 12; i++) {
+  const wakeMat = new THREE.MeshBasicMaterial({ color: i % 3 === 0 ? 0xd9ffff : 0x76eaff, transparent: true, opacity: 0.2, depthWrite: false });
+  const puff = new THREE.Mesh(new THREE.SphereGeometry(0.12 + (i % 4) * 0.035, 8, 6), wakeMat);
+  puff.visible = false;
+  scene.add(puff);
+  wakeParticles.push(puff);
+}
+
 const bottleMaterial = material(0x42dcf5, 0.17, 0.22);
 function makeBottle() {
   const g = new THREE.Group();
@@ -448,7 +522,7 @@ for (let i = 0; i < 39; i++) {
 for (let i = 0; i < 24; i++) addCoin(i % 3, -38 - i * 17);
 
 const state = {
-  lane: 1, x: 0, vy: 0, jumping: false, slide: 0,
+  lane: 1, x: 0, targetX: 0, jumpY: 0, vy: 0, jumping: false, slide: 0, lean: 0,
   speed: 22, distance: 0, coins: 0, bottles: 0,
   turboTime: 0, alive: true, running: false, elapsed: 0
 };
@@ -502,8 +576,8 @@ function changeLane(direction) {
   state.lane = THREE.MathUtils.clamp(state.lane + direction, 0, 2);
   state.x = LANES[state.lane];
   if (oldLane !== state.lane) {
-    player.position.x = state.x;
-    player.rotation.z = direction * -0.2;
+    state.targetX = LANES[state.lane];
+    state.lean = direction * -0.22;
   }
 }
 function jump() {
@@ -692,20 +766,47 @@ function update(dt, time) {
 
   if (state.running && state.alive) {
     state.distance += state.speed * dt;
-    state.x = LANES[state.lane];
+    // Lateral target eases toward the selected lane: no hard teleport.
+    state.x = THREE.MathUtils.damp(state.x, state.targetX, 13.5, dt);
     player.position.x = state.x;
-    state.vy -= 18.5 * dt;
-    let jumpHeight = player.position.y + state.vy * dt;
-    if (jumpHeight <= 0) {
-      jumpHeight = 0;
-      state.vy = 0;
-      state.jumping = false;
+    player.position.z = 3;
+    player.visible = true;
+
+    // Jump physics use an independent height value. The water bob is visual only,
+    // so it cannot accumulate every frame and push the rider out of the camera.
+    if (state.jumping) {
+      state.vy -= 18.5 * dt;
+      state.jumpY = Math.max(0, state.jumpY + state.vy * dt);
+      if (state.jumpY <= 0) {
+        state.vy = 0;
+        state.jumping = false;
+      }
     }
-    player.position.y = jumpHeight + Math.sin(time * 5) * 0.035;
+    player.position.y = state.jumpY + Math.sin(time * 6.2) * 0.022;
     state.slide = Math.max(0, state.slide - dt);
-    player.scale.y = state.slide > 0 ? 0.76 : 1;
-    player.rotation.z = THREE.MathUtils.damp(player.rotation.z, 0, 9, dt);
+    const body = player.userData.body;
+    if (body) {
+      const slideFactor = state.slide > 0 ? 0.76 : 1;
+      body.scale.y = THREE.MathUtils.damp(body.scale.y, slideFactor, 18, dt);
+      body.position.y = THREE.MathUtils.damp(body.position.y, state.slide > 0 ? -0.22 : 0, 18, dt);
+      const armSwing = Math.sin(time * 10) * (state.jumpY > 0.1 ? 0.34 : 0.1);
+      player.userData.armPivots?.forEach((arm, i) => { arm.rotation.x = armSwing * (i ? -1 : 1); });
+      player.userData.legPivots?.forEach((leg, i) => { leg.rotation.x = Math.sin(time * 9 + i * Math.PI) * (state.jumpY > 0.1 ? 0.32 : 0.07); });
+    }
+    state.lean = THREE.MathUtils.damp(state.lean, 0, 6.5, dt);
+    player.rotation.z = THREE.MathUtils.damp(player.rotation.z, state.lean, 12, dt);
     player.rotation.x = THREE.MathUtils.damp(player.rotation.x, Math.sin(time * 7) * 0.018, 3, dt);
+
+    for (let i = 0; i < wakeParticles.length; i++) {
+      const puff = wakeParticles[i];
+      const phase = time * 5.5 + i * 0.82;
+      puff.visible = true;
+      puff.position.set(player.position.x + Math.sin(phase) * (0.34 + i * 0.035), 0.075 + (i % 3) * 0.025, player.position.z + 1.0 + i * 0.22);
+      const fade = 1 - i / wakeParticles.length;
+      puff.material.opacity = fade * (state.turboTime > 0 ? 0.46 : 0.22);
+      const size = 0.65 + Math.sin(phase) * 0.18 + (state.turboTime > 0 ? 0.3 : 0);
+      puff.scale.setScalar(size);
+    }
 
     const boosted = state.turboTime > 0;
     if (boosted) {
@@ -739,7 +840,7 @@ function update(dt, time) {
           object.z = 9999;
           object.mesh.visible = false;
           state.coins++;
-        } else if (group === obstacles && dz < 1.75 && dx < 1.42 && player.position.y < 1.2 && state.slide <= 0 && !boosted) {
+        } else if (group === obstacles && dz < 1.75 && dx < 1.42 && state.jumpY < 1.2 && state.slide <= 0 && !boosted) {
           state.speed = Math.max(9, state.speed * 0.64);
           toast('OBSTÁCULO! DESVIE COM UM GESTO');
           object.z = 9999;
@@ -781,14 +882,27 @@ function update(dt, time) {
     }
   }
 
+  if (!state.running) {
+    player.visible = true;
+    player.position.y = Math.sin(time * 2.2) * 0.025;
+    player.rotation.z = Math.sin(time * 1.4) * 0.018;
+  }
+
   for (const remote of remotePlayers.values()) {
-    remote.mesh.position.lerp(remote.target, Math.min(1, dt * 8));
+    remote.mesh.visible = true;
+    remote.mesh.position.lerp(remote.target, Math.min(1, dt * 7));
     remote.mesh.lookAt(remote.mesh.position.x, 1.15, remote.mesh.position.z - 4);
+    const bob = remote.mesh.userData.body;
+    if (bob) {
+      remote.mesh.userData.armPivots?.forEach((arm, i) => { arm.rotation.x = Math.sin(time * 7 + i * Math.PI) * 0.08; });
+      remote.mesh.userData.legPivots?.forEach((leg, i) => { leg.rotation.x = Math.sin(time * 7 + i * Math.PI) * 0.05; });
+    }
   }
 
   camera.position.x = THREE.MathUtils.damp(camera.position.x, player.position.x * 0.24, 4.2, dt);
-  camera.position.y = THREE.MathUtils.damp(camera.position.y, 6.1 + player.position.y * 0.1, 3.5, dt);
-  camera.lookAt(player.position.x * 0.16, 1.15, -8.8);
+  camera.position.y = THREE.MathUtils.damp(camera.position.y, 6.8 + state.jumpY * 0.08, 3.2, dt);
+  camera.position.z = THREE.MathUtils.damp(camera.position.z, 13.6, 2.5, dt);
+  camera.lookAt(player.position.x * 0.13, 1.18, -9.8);
 }
 
 function frame(now) {

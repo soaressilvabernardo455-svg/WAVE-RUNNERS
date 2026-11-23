@@ -138,3 +138,36 @@ body.in-lobby .race-hud,body.in-lobby .turbo-panel,body.in-lobby .bottom-left,bo
  .lobby-controls{margin-top:9px}
  .lobby-footer{display:none}
 }
+
+/* RIVER RUSH polish pass — lobby, character readability and mobile HUD */
+.lobby{background:linear-gradient(180deg,rgba(3,25,43,.32),rgba(2,22,38,.82));}
+.lobby-content{filter:drop-shadow(0 10px 24px rgba(0,15,30,.25));}
+.lobby-panel{position:relative;overflow:hidden;border-color:rgba(135,236,255,.48);background:linear-gradient(145deg,rgba(5,42,64,.94),rgba(7,70,87,.88));}
+.lobby-panel:before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,#71edff,transparent);opacity:.9;}
+.lobby-panel-head{position:relative;}
+.lobby-feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:min(100%,390px);margin:12px auto 0;}
+.lobby-feature{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px 9px;border:1px solid rgba(164,238,255,.24);border-radius:12px;background:linear-gradient(145deg,rgba(6,49,71,.88),rgba(6,38,58,.88));box-shadow:0 6px 18px rgba(0,17,32,.18);}
+.lobby-feature b{font:900 25px 'Barlow Condensed';color:#73e6ff;text-shadow:0 0 15px rgba(56,210,246,.35);}
+.lobby-feature span{font:900 8px Inter;letter-spacing:1px;color:#e3f8fa;}
+.lobby-feature small{font:800 6px Inter;letter-spacing:.7px;color:#9fc8d5;text-align:center;}
+.lobby-slot{transition:background .2s,border-color .2s,transform .2s;}
+.lobby-slot.is-filled{box-shadow:inset 3px 0 #54e3f5,0 4px 13px rgba(0,18,34,.14);}
+.start-button{position:relative;overflow:hidden;transition:transform .16s,filter .16s;box-shadow:0 8px 25px rgba(0,185,223,.22),inset 0 1px rgba(255,255,255,.24);}
+.start-button:active{transform:scale(.985);filter:brightness(1.08);}
+.training-button:active{background:#0d4963;}
+.brand-icon{box-shadow:0 0 22px rgba(37,188,245,.22),inset 0 0 14px rgba(37,188,245,.1);}
+.gesture-hint{border-color:rgba(153,236,255,.32);box-shadow:0 4px 18px rgba(0,20,36,.2);}
+.turbo-panel{box-shadow:0 14px 38px rgba(0,20,38,.35),inset 0 1px rgba(255,255,255,.08);}
+@media(max-width:700px){
+  .lobby-feature-grid{gap:6px;margin-top:10px;}
+  .lobby-feature{padding:8px 3px 7px;border-radius:10px;}
+  .lobby-feature b{font-size:22px;}
+  .lobby-feature span{font-size:7px;}
+  .lobby-feature small{font-size:5.5px;letter-spacing:.35px;}
+  .lobby-controls{margin-top:11px;}
+}
+@media(max-height:700px) and (max-width:700px){
+  .lobby-feature{padding:6px 3px;}
+  .lobby-feature b{font-size:19px;}
+  .lobby-feature small{display:none;}
+}
