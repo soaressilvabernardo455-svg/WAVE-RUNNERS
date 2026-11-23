@@ -171,3 +171,38 @@ body.in-lobby .race-hud,body.in-lobby .turbo-panel,body.in-lobby .bottom-left,bo
   .lobby-feature b{font-size:19px;}
   .lobby-feature small{display:none;}
 }
+
+
+/* Garagem e loja de itens */
+.shop-hud-button{
+  display:block;width:100%;margin:0 0 9px;padding:9px 8px;
+  border:1px solid rgba(120,235,255,.56);border-radius:10px;
+  background:linear-gradient(100deg,#075d82,#13a9ca);color:#effcff;
+  font:900 11px 'Barlow Condensed',sans-serif;letter-spacing:1.2px;
+  box-shadow:0 5px 18px rgba(0,174,220,.22);touch-action:manipulation;
+}
+.shop-lobby-button{margin-top:8px;background:linear-gradient(100deg,#104761,#167a91);color:#e5fbff;border-color:#73dff855;}
+#shop-modal{z-index:22;}
+.shop-card{max-height:88vh;overflow-y:auto;padding:25px;}
+.shop-card h1{margin:4px 0 8px;font-size:40px;}
+.shop-balance-line{margin:0 0 17px;color:#bcecf5;font-size:10px;font-weight:900;letter-spacing:1px;}
+.shop-balance-line b{color:#ffdf72;font:900 22px 'Barlow Condensed';}
+.shop-item{display:flex;align-items:center;gap:13px;padding:14px;border:1px solid #7beaff55;border-radius:14px;background:linear-gradient(140deg,#0a5d78,#082d49);text-align:left;}
+.shop-item-icon{flex:0 0 54px;width:54px;height:54px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(145deg,#0ec8ed,#0875a8);font-size:27px;box-shadow:0 0 20px #18c9e744;}
+.shop-item-copy strong,.shop-item-copy span{display:block;}
+.shop-item-copy strong{font:900 20px 'Barlow Condensed';letter-spacing:.7px;color:#7ceaff;}
+.shop-item-copy span{margin-top:4px;font-size:10px;line-height:1.5;color:#d6edf3;}
+.shop-buy-button,.shop-close{width:100%;margin-top:12px;padding:13px 12px;border:0;border-radius:10px;font:900 14px 'Barlow Condensed';letter-spacing:1px;touch-action:manipulation;}
+.shop-buy-button{background:linear-gradient(100deg,#ffbd43,#ffe58a);color:#25364a;box-shadow:0 6px 20px #ffcb5540;}
+.shop-buy-button:disabled{background:#425f6d;color:#a9c0c9;box-shadow:none;opacity:.9;}
+.shop-status{min-height:28px;margin:10px 0 0!important;font-size:10px!important;line-height:1.5;color:#b8e0ea!important;}
+.shop-close{margin-top:8px;background:#0a324b!important;border:1px solid #8deaff55!important;color:#dcf8ff!important;}
+@media(max-width:700px){
+  .turbo-panel{width:142px;padding:8px;}
+  .shop-hud-button{padding:8px 5px;font-size:10px;margin-bottom:7px;}
+  .shop-card{padding:20px 17px;}
+  .shop-item{gap:10px;padding:11px;}
+  .shop-item-icon{flex-basis:46px;width:46px;height:46px;font-size:23px;}
+  .shop-item-copy strong{font-size:18px;}
+  .shop-item-copy span{font-size:9px;}
+}
