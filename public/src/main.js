@@ -47,18 +47,24 @@ const stoneLight = material(0x9bb0a9, 0.8);
 const grass = material(0x438a69, 0.92);
 const wood = material(0x805a42, 0.8);
 
+// Elementos do cenário acompanham o avanço do piloto e são reciclados para manter o rio contínuo.
+const sceneryObjects = [];
+const longWorldObjects = [];
+
 const riverGeometry = new THREE.PlaneGeometry(33, 520, 42, 128);
 riverGeometry.rotateX(-Math.PI / 2);
 const river = new THREE.Mesh(riverGeometry, waterMaterial);
 river.position.set(0, -0.22, -205);
 river.receiveShadow = true;
 scene.add(river);
+longWorldObjects.push(river);
 const riverBase = riverGeometry.attributes.position.array.slice();
 
 const bed = new THREE.Mesh(new THREE.PlaneGeometry(38, 525), material(0x315e60, 1));
 bed.rotation.x = -Math.PI / 2;
 bed.position.set(0, -2.25, -205);
 scene.add(bed);
+longWorldObjects.push(bed);
 
 // Margens que fecham o rio: as três faixas jogáveis ficam sempre dentro delas.
 for (const side of [-1, 1]) {
@@ -67,17 +73,20 @@ for (const side of [-1, 1]) {
   bank.castShadow = true;
   bank.receiveShadow = true;
   scene.add(bank);
+  longWorldObjects.push(bank);
 
   const coping = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.42, 525), stoneLight);
   coping.position.set(side * 17.2, 2.42, -205);
   coping.castShadow = true;
   scene.add(coping);
+  longWorldObjects.push(coping);
 
   const outerGround = new THREE.Mesh(new THREE.PlaneGeometry(110, 525), grass);
   outerGround.rotation.x = -Math.PI / 2;
   outerGround.position.set(side * 72, -0.72, -205);
   outerGround.receiveShadow = true;
   scene.add(outerGround);
+  longWorldObjects.push(outerGround);
 
   const waterline = new THREE.Mesh(
     new THREE.BoxGeometry(0.22, 0.16, 520),
@@ -85,6 +94,7 @@ for (const side of [-1, 1]) {
   );
   waterline.position.set(side * 16.45, 0.03, -205);
   scene.add(waterline);
+  longWorldObjects.push(waterline);
 }
 
 function makeHouse(side, z, index) {
@@ -162,6 +172,7 @@ function makeHouse(side, z, index) {
 
   g.position.set(side * (23.6 + (index % 2) * 1.1), 0, z);
   scene.add(g);
+  sceneryObjects.push(g);
 }
 
 function makeLamp(side, z) {
@@ -186,6 +197,7 @@ function makeLamp(side, z) {
   g.add(glow);
   g.position.set(side * 15.25, 0, z);
   scene.add(g);
+  sceneryObjects.push(g);
 }
 
 function makeBridge(z, index) {
@@ -216,6 +228,7 @@ function makeBridge(z, index) {
   }
   g.position.z = z;
   scene.add(g);
+  sceneryObjects.push(g);
 }
 
 function makeRiverTree(side, z, index) {
@@ -235,6 +248,7 @@ function makeRiverTree(side, z, index) {
   g.add(planter);
   g.position.set(side * (31.5 + (index % 2) * 1.4), -0.45, z);
   scene.add(g);
+  sceneryObjects.push(g);
 }
 
 function makeDock(side, z, index) {
@@ -261,6 +275,7 @@ function makeDock(side, z, index) {
   g.add(ring);
   g.position.set(side * 13.2, 0, z);
   scene.add(g);
+  sceneryObjects.push(g);
 }
 
 for (let i = 0; i < 14; i++) {
@@ -284,18 +299,27 @@ for (const side of [-1, 1]) {
     const post = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.58, 2.5, 8), material(0x617d7c, 0.95));
     post.position.set(side * (13.8 + (i % 2) * 0.5), -1.45, -18 - i * 26);
     scene.add(post);
+    longWorldObjects.push(post);
   }
 }
 
 function makeRider(boardColor = 0xff7047) {
   const group = new THREE.Group();
-  const boardMaterial = material(boardColor, 0.22, 0.32);
+  const boardMaterial = material(boardColor, 0.22, 0.42);
+  boardMaterial.emissive.set(0x001320);
+  boardMaterial.emissiveIntensity = 0.14;
   const board = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.7, 6, 14), boardMaterial);
   board.scale.set(0.84, 1.0, 0.16);
   board.rotation.x = Math.PI / 2;
   board.position.y = 0.25;
   board.castShadow = true;
   group.add(board);
+
+  const specialAura = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.055, 8, 28), new THREE.MeshBasicMaterial({ color: 0x66f4ff, transparent: true, opacity: 0.88, depthWrite: false }));
+  specialAura.rotation.x = Math.PI / 2;
+  specialAura.position.y = 0.48;
+  specialAura.visible = false;
+  group.add(specialAura);
 
   const deck = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.06, 2.55), material(0x172f48, 0.28, 0.28));
   deck.position.y = 0.39;
@@ -410,6 +434,7 @@ function makeRider(boardColor = 0xff7047) {
   group.userData.armPivots = armPivots;
   group.userData.legPivots = legPivots;
   group.userData.board = board;
+  group.userData.specialAura = specialAura;
   group.userData.frustumCulled = false;
   group.traverse(node => { if (node.isMesh) node.frustumCulled = false; });
   return group;
@@ -419,6 +444,13 @@ const LANES = [-5.35, 0, 5.35];
 const player = makeRider();
 scene.add(player);
 player.position.set(0, 0, 3);
+
+// Anel reutilizado como efeito visual quando o jet ski especial destrói um obstáculo.
+const smashFlash = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.1, 8, 24), new THREE.MeshBasicMaterial({ color: 0x72f8ff, transparent: true, opacity: 0.9, depthWrite: false }));
+smashFlash.rotation.x = Math.PI / 2;
+smashFlash.visible = false;
+scene.add(smashFlash);
+let smashFlashTime = 0;
 
 const remotePlayers = new Map();
 
@@ -508,6 +540,7 @@ function addCoin(lane, z) {
 }
 function addObstacle(lane, z, jet) {
   const mesh = makeWatercraft(jet);
+  mesh.scale.setScalar(jet ? 1.28 : 1.38);
   mesh.position.set(LANES[lane], 0, z);
   scene.add(mesh);
   obstacles.push({ mesh, z, lane, jet, phase: Math.random() * 7 });
@@ -521,10 +554,18 @@ for (let i = 0; i < 39; i++) {
 }
 for (let i = 0; i < 24; i++) addCoin(i % 3, -38 - i * 17);
 
+let savedWallet = 0;
+let savedSpecialJetSki = false;
+try {
+  const rawWallet = Number.parseInt(localStorage.getItem('wave_runner_coins') || '0', 10);
+  savedWallet = Number.isFinite(rawWallet) ? Math.max(0, rawWallet) : 0;
+  savedSpecialJetSki = localStorage.getItem('wave_runner_special_jetski') === 'true';
+} catch {}
+
 const state = {
   lane: 1, x: 0, targetX: 0, jumpY: 0, vy: 0, jumping: false, slide: 0, lean: 0,
-  speed: 22, distance: 0, coins: 0, bottles: 0,
-  turboTime: 0, alive: true, running: false, elapsed: 0
+  speed: 22, distance: 0, coins: savedWallet, runCoins: 0, bottles: 0,
+  turboTime: 0, specialJetski: savedSpecialJetSki, alive: true, running: false, elapsed: 0
 };
 const ui = {
   ping: document.getElementById('ping'),
@@ -541,7 +582,16 @@ const ui = {
   lobby: document.getElementById('lobby'),
   lobbyStatus: document.getElementById('lobby-status'),
   lobbyCount: document.getElementById('lobby-player-count'),
-  lobbySlots: document.getElementById('lobby-slots')
+  lobbySlots: document.getElementById('lobby-slots'),
+  finish: document.getElementById('finish'),
+  finishTitle: document.getElementById('finish-title'),
+  finishCopy: document.getElementById('finish-copy'),
+  finalDistance: document.getElementById('final-distance'),
+  finalCoins: document.getElementById('final-coins'),
+  shop: document.getElementById('shop-modal'),
+  shopBalance: document.getElementById('shop-balance'),
+  shopStatus: document.getElementById('shop-status'),
+  buySpecial: document.getElementById('buy-special')
 };
 
 function toast(message) {
@@ -550,6 +600,82 @@ function toast(message) {
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => ui.toast.classList.remove('show'), 1450);
 }
+
+const SPECIAL_JETSKI_PRICE = 100;
+let shopReturnToRace = false;
+function saveWallet() {
+  try { localStorage.setItem('wave_runner_coins', String(state.coins)); } catch {}
+}
+function applySpecialJetSkiLook() {
+  const boardMaterial = player.userData.board.material;
+  if (state.specialJetski) {
+    boardMaterial.color.set(0x18cce8);
+    boardMaterial.emissive.set(0x075a73);
+    boardMaterial.emissiveIntensity = 0.72;
+    player.userData.specialAura.visible = true;
+  } else {
+    boardMaterial.color.set(0xff7047);
+    boardMaterial.emissive.set(0x001320);
+    boardMaterial.emissiveIntensity = 0.14;
+    player.userData.specialAura.visible = false;
+  }
+}
+function refreshShop() {
+  ui.shopBalance.textContent = String(state.coins);
+  if (state.specialJetski) {
+    ui.buySpecial.textContent = 'JET SKI ESPECIAL COMPRADO';
+    ui.buySpecial.disabled = true;
+    ui.shopStatus.textContent = 'Equipado! Você destrói obstáculos ao encostar neles.';
+  } else {
+    ui.buySpecial.textContent = state.coins >= SPECIAL_JETSKI_PRICE ? 'COMPRAR • 100 MOEDAS' : 'FALTAM ' + (SPECIAL_JETSKI_PRICE - state.coins) + ' MOEDAS';
+    ui.buySpecial.disabled = state.coins < SPECIAL_JETSKI_PRICE;
+    ui.shopStatus.textContent = 'Colete moedas durante as corridas para desbloquear o jet ski.';
+  }
+}
+function openShop() {
+  shopReturnToRace = state.running;
+  if (state.running) state.running = false;
+  refreshShop();
+  ui.shop.classList.remove('hidden');
+}
+function closeShop() {
+  ui.shop.classList.add('hidden');
+  if (shopReturnToRace && state.alive) state.running = true;
+  shopReturnToRace = false;
+}
+function buySpecialJetSki() {
+  if (state.specialJetski) return;
+  if (state.coins < SPECIAL_JETSKI_PRICE) {
+    refreshShop();
+    return;
+  }
+  state.coins -= SPECIAL_JETSKI_PRICE;
+  state.specialJetski = true;
+  saveWallet();
+  try { localStorage.setItem('wave_runner_special_jetski', 'true'); } catch {}
+  applySpecialJetSkiLook();
+  refreshShop();
+  ui.coins.textContent = String(state.coins).padStart(3, '0');
+  toast('JET SKI ESPECIAL DESBLOQUEADO!');
+}
+function finishRace(message) {
+  if (!state.alive) return;
+  state.alive = false;
+  state.running = false;
+  state.speed = 0;
+  ui.finishTitle.textContent = 'VOCÊ BATEU!';
+  ui.finishCopy.textContent = message;
+  ui.finalDistance.textContent = Math.floor(state.distance) + ' m';
+  ui.finalCoins.textContent = String(state.runCoins);
+  ui.finish.classList.remove('hidden');
+}
+applySpecialJetSkiLook();
+ui.coins.textContent = String(state.coins).padStart(3, '0');
+document.getElementById('shop-open')?.addEventListener('click', openShop);
+document.getElementById('shop-open-lobby')?.addEventListener('click', openShop);
+document.getElementById('shop-from-finish')?.addEventListener('click', openShop);
+document.getElementById('shop-close')?.addEventListener('click', closeShop);
+document.getElementById('buy-special')?.addEventListener('click', buySpecialJetSki);
 function setConnection(label, color) {
   ui.net.textContent = label;
   ui.lobbyStatus.textContent = label;
@@ -574,10 +700,9 @@ updateLobbyRoster();
 function changeLane(direction) {
   const oldLane = state.lane;
   state.lane = THREE.MathUtils.clamp(state.lane + direction, 0, 2);
-  state.x = LANES[state.lane];
   if (oldLane !== state.lane) {
     state.targetX = LANES[state.lane];
-    state.lean = direction * -0.22;
+    state.lean = direction * -0.34;
   }
 }
 function jump() {
@@ -597,7 +722,8 @@ function turbo() {
   }
 }
 function startRace() {
-  if (state.running) return;
+  if (state.running || !state.alive) return;
+  state.runCoins = 0;
   state.running = true;
   document.body.classList.remove('in-lobby');
   ui.lobby.classList.add('hidden');
@@ -767,7 +893,8 @@ function update(dt, time) {
   if (state.running && state.alive) {
     state.distance += state.speed * dt;
     // Lateral target eases toward the selected lane: no hard teleport.
-    state.x = THREE.MathUtils.damp(state.x, state.targetX, 13.5, dt);
+    state.x = THREE.MathUtils.damp(state.x, state.targetX, 7.2, dt);
+    state.x = THREE.MathUtils.clamp(state.x, LANES[0], LANES[2]);
     player.position.x = state.x;
     player.position.z = 3;
     player.visible = true;
@@ -817,17 +944,27 @@ function update(dt, time) {
     }
 
     const travel = state.speed * dt;
+    for (const object of longWorldObjects) {
+      object.position.z += travel;
+      if (object.position.z > 55) object.position.z -= 520;
+    }
+    for (const object of sceneryObjects) {
+      object.position.z += travel;
+      if (object.position.z > 22) object.position.z -= 490;
+    }
     for (const group of [items, coins, obstacles]) {
       for (const object of group) {
-        object.z += travel;
+        if (!state.running || !state.alive) break;
+        // Jet skis avançam mais depressa em direção ao piloto; barcos não giram.
+        const objectTravel = travel * (object.jet ? 1.3 : 1);
+        object.z += objectTravel;
         object.mesh.position.z = object.z;
         if (object.type === 'bottle') {
           object.mesh.rotation.y += dt * 1.7;
           object.mesh.position.y = 0.15 + Math.sin(time * 3 + object.z) * 0.13;
-        } else if (object.mesh.rotation) {
-          object.mesh.rotation.y += dt * 0.55;
+        } else if (group === coins) {
+          object.mesh.rotation.z += dt * 1.8;
         }
-        if (object.jet) object.mesh.rotation.z = Math.sin(time * 1.25 + object.phase) * 0.07;
 
         const dx = Math.abs(object.mesh.position.x - player.position.x);
         const dz = Math.abs(object.z - player.position.z);
@@ -840,11 +977,23 @@ function update(dt, time) {
           object.z = 9999;
           object.mesh.visible = false;
           state.coins++;
-        } else if (group === obstacles && dz < 1.75 && dx < 1.42 && state.jumpY < 1.2 && state.slide <= 0 && !boosted) {
-          state.speed = Math.max(9, state.speed * 0.64);
-          toast('OBSTÁCULO! DESVIE COM UM GESTO');
-          object.z = 9999;
-          object.mesh.visible = false;
+          state.runCoins++;
+          saveWallet();
+          if (!ui.shop.classList.contains('hidden')) refreshShop();
+        } else if (group === obstacles && dz < 2.2 && dx < 1.9) {
+          if (state.specialJetski) {
+            smashFlash.position.set(object.mesh.position.x, 0.85, object.z);
+            smashFlash.scale.setScalar(0.38);
+            smashFlash.material.opacity = 0.9;
+            smashFlash.visible = true;
+            smashFlashTime = 0.42;
+            object.z = 9999;
+            object.mesh.visible = false;
+            toast('JET SKI ESPECIAL: OBSTÁCULO DESTRUÍDO!');
+          } else {
+            finishRace('Você atingiu um obstáculo. Desvie para as outras faixas na próxima corrida.');
+            break;
+          }
         }
 
         if (object.z > 18) {
@@ -855,6 +1004,7 @@ function update(dt, time) {
           if (object.phase !== undefined) object.phase = Math.random() * 8;
         }
       }
+      if (!state.running || !state.alive) break;
     }
 
     ui.speed.textContent = Math.round(state.speed * 3.6);
@@ -882,6 +1032,16 @@ function update(dt, time) {
     }
   }
 
+  if (smashFlashTime > 0) {
+    smashFlashTime = Math.max(0, smashFlashTime - dt);
+    const progress = 1 - smashFlashTime / 0.42;
+    smashFlash.scale.setScalar(0.38 + progress * 1.5);
+    smashFlash.material.opacity = smashFlashTime / 0.42;
+    smashFlash.rotation.z += dt * 5.5;
+  } else {
+    smashFlash.visible = false;
+  }
+
   if (!state.running) {
     player.visible = true;
     player.position.y = Math.sin(time * 2.2) * 0.025;
@@ -899,10 +1059,10 @@ function update(dt, time) {
     }
   }
 
-  camera.position.x = THREE.MathUtils.damp(camera.position.x, player.position.x * 0.24, 4.2, dt);
+  camera.position.x = THREE.MathUtils.damp(camera.position.x, player.position.x * 0.48, 4.2, dt);
   camera.position.y = THREE.MathUtils.damp(camera.position.y, 6.8 + state.jumpY * 0.08, 3.2, dt);
   camera.position.z = THREE.MathUtils.damp(camera.position.z, 13.6, 2.5, dt);
-  camera.lookAt(player.position.x * 0.13, 1.18, -9.8);
+  camera.lookAt(player.position.x * 0.32, 1.18, -9.8);
 }
 
 function frame(now) {
