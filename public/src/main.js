@@ -976,6 +976,7 @@ const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
 const defaultServer = 'wss://wave-runner-online.onrender.com/ws';
 const networkUrl = window.WAVE_RUNNER_WS_URL || (nativeApp ? defaultServer : protocol + '://' + location.host + '/ws');
 let network = null;
+const ignoredSockets = new WeakSet();
 let playerId = null;
 let offlineMode = false;
 let reconnectTimer = 0;
@@ -1009,6 +1010,7 @@ function connect() {
     socket.onmessage = event => {
       let data;
       try { data = JSON.parse(event.data); } catch { return; }
+      if (offlineMode || ignoredSockets.has(socket)) return;
       if (data.type === 'welcome') {
         playerId = data.id;
         roomCapacity = data.capacity || selectedRoom.capacity || 100;
@@ -1071,6 +1073,7 @@ function connect() {
       }
     };
     socket.onclose = () => {
+      if (ignoredSockets.has(socket)) { ignoredSockets.delete(socket); return; }
       if (network === socket) network = null;
       playerId = null;
       roomRoster = [];
@@ -1141,6 +1144,17 @@ function enterRoom(room) {
   selectedRoom = { id: room.id, name: room.name || 'Sala', password: room.password || '', capacity: room.capacity || 100 };
   offlineMode = false;
   startWhenJoined = true;
+  playerId = null;
+  roomRoster = [];
+  for (const rider of remotePlayers.values()) scene.remove(rider.mesh);
+  remotePlayers.clear();
+  if (network) {
+    const oldSocket = network;
+    network = null;
+    ignoredSockets.add(oldSocket);
+    oldSocket.close();
+  }
+  updateLobbyRoster();
   connect();
   toast('CONECTANDO À SALA ' + selectedRoom.name.toUpperCase());
 }
@@ -1183,6 +1197,8 @@ document.getElementById('room-join-private')?.addEventListener('click', joinPriv
 document.getElementById('room-visibility')?.addEventListener('change', event => {
   document.getElementById('room-password-row')?.classList.toggle('hidden', event.target.value !== 'private');
 });
+
+connect();
 
 function updateRiver(time) {
   const positions = riverGeometry.attributes.position;
