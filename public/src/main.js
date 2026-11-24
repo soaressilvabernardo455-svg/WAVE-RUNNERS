@@ -550,7 +550,7 @@ for (let i = 0; i < foamCount; i++) {
   foamZ[i] = -20 - i * 7.2;
   foamAngle[i] = ((i % 7) - 3) * 0.09;
   foamDummy.position.set(foamX[i], -0.01, foamZ[i]);
-  foamDummy.rotation.set(-Math.PI / 2, foamAngle[i], 0);
+  foamDummy.rotation.set(0, foamAngle[i], 0);
   foamDummy.scale.set(0.75 + (i % 3) * 0.25, 1, 1);
   foamDummy.updateMatrix();
   waterFoam.setMatrixAt(i, foamDummy.matrix);
@@ -569,8 +569,9 @@ function updateRiverDecor(travel, time) {
   for (let i = 0; i < foamCount; i++) {
     foamZ[i] += travel * 1.12;
     if (foamZ[i] > 12) foamZ[i] -= foamCount * 7.2;
-    foamDummy.position.set(foamX[i], -0.015 + Math.sin(time * 2 + i) * 0.012, foamZ[i]);
-    foamDummy.rotation.set(-Math.PI / 2, foamAngle[i] + Math.sin(time + i) * 0.025, 0);
+    foamDummy.position.set(foamX[i], -0.16 + Math.sin(time * 2 + i) * 0.012, foamZ[i]);
+    foamDummy.rotation.set(0, foamAngle[i] + Math.sin(time + i) * 0.025, 0);
+    foamDummy.scale.set(0.75 + (i % 3) * 0.25, 1, 1);
     foamDummy.updateMatrix();
     waterFoam.setMatrixAt(i, foamDummy.matrix);
   }
@@ -589,6 +590,8 @@ let roomRoster = [];
 let roomCapacity = 100;
 let selectedRoom = { id: 'river-rush-3', name: 'Rio público', password: '', capacity: 100 };
 let manualDisconnect = false;
+let startWhenJoined = false;
+let lastCreatedRoomCode = '';
 
 // Reusable wake particles. Kept as a tiny pool to avoid allocating meshes every frame.
 const wakeParticles = [];
@@ -732,11 +735,11 @@ const ui = {
   buySpecial: document.getElementById('buy-special')
 };
 
-function toast(message) {
+function toast(message, duration = 1450) {
   ui.toast.textContent = message;
   ui.toast.classList.add('show');
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => ui.toast.classList.remove('show'), 1450);
+  toast.timer = setTimeout(() => ui.toast.classList.remove('show'), duration);
 }
 
 setRiderName(player, state.playerName, true);
@@ -879,13 +882,13 @@ function turbo() {
     toast('TURBO ATIVADO!');
   }
 }
-function startRace() {
+function startRace(silent = false) {
   if (state.running || !state.alive) return;
   state.runCoins = 0;
   state.running = true;
   document.body.classList.remove('in-lobby');
   ui.lobby.classList.add('hidden');
-  toast('BOA ONDA! DESVIE COM GESTOS');
+  if (!silent) toast('BOA ONDA! DESVIE COM GESTOS');
 }
 document.getElementById('start-game').addEventListener('click', () => {
   offlineMode = false;
@@ -1011,8 +1014,18 @@ function connect() {
         roomCapacity = data.capacity || selectedRoom.capacity || 100;
         setConnection('ONLINE', '#55f2a8');
         updateLobbyRoster();
+        if (startWhenJoined) {
+          startWhenJoined = false;
+          document.getElementById('rooms-modal')?.classList.add('hidden');
+          startRace(true);
+          if (lastCreatedRoomCode) {
+            toast(lastCreatedRoomCode, 6000);
+            lastCreatedRoomCode = '';
+          }
+        }
       }
       if (['room-full', 'room-not-found', 'wrong-password'].includes(data.type)) {
+        startWhenJoined = false;
         manualDisconnect = true;
         const messages = {
           'room-full': 'ESSA SALA ESTÁ CHEIA',
@@ -1079,6 +1092,7 @@ function connect() {
       if (socket.readyState !== WebSocket.CLOSED) socket.close();
     };
   } catch {
+    startWhenJoined = false;
     setConnection('OFFLINE', '#ff9b66');
   }
 }
@@ -1126,10 +1140,9 @@ async function refreshPublicRooms() {
 function enterRoom(room) {
   selectedRoom = { id: room.id, name: room.name || 'Sala', password: room.password || '', capacity: room.capacity || 100 };
   offlineMode = false;
-  document.getElementById('rooms-modal')?.classList.add('hidden');
+  startWhenJoined = true;
   connect();
-  startRace();
-  toast('ENTRANDO EM ' + selectedRoom.name.toUpperCase());
+  toast('CONECTANDO À SALA ' + selectedRoom.name.toUpperCase());
 }
 async function createRoom() {
   const name = document.getElementById('room-name-input')?.value.trim() || 'Minha sala';
@@ -1147,8 +1160,8 @@ async function createRoom() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Não foi possível criar a sala');
     selectedRoom = { id: data.id, name: data.name, password: password, capacity: data.capacity || 100 };
+    lastCreatedRoomCode = (visibility === 'private' ? 'SALA PRIVADA • CÓDIGO ' : 'SALA PÚBLICA • CÓDIGO ') + data.id;
     enterRoom(selectedRoom);
-    toast((visibility === 'private' ? 'SALA PRIVADA • CÓDIGO ' : 'SALA PÚBLICA • CÓDIGO ') + data.id);
   } catch (error) {
     toast(error.message || 'ERRO AO CRIAR SALA');
   }
@@ -1331,7 +1344,7 @@ function update(dt, time) {
     if (!offlineMode && network && network.readyState === WebSocket.OPEN) {
       sendClock += dt;
       pingClock += dt;
-      if (sendClock >= 0.09) {
+      if (sendClock >= 0.15) {
         sendClock = 0;
         network.send(JSON.stringify({
           type: 'state', x: player.position.x, y: player.position.y,
