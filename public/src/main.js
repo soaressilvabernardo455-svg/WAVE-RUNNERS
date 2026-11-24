@@ -10,14 +10,17 @@ scene.fog = new THREE.Fog(0x77c5df, 82, 330);
 const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 700);
 camera.position.set(0, 6.8, 13.6);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1.35 : 1.8));
+const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance' });
+const mobilePixelCap = isMobile ? 0.9 : 1.5;
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobilePixelCap));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.14;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// Sombras em tempo real são caras em celulares; manter sombras apenas em telas maiores.
+renderer.shadowMap.enabled = !isMobile;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+if (isMobile) sun.castShadow = false;
 root.appendChild(renderer.domElement);
 renderer.domElement.setAttribute('aria-label', 'Área de jogo Wave Runner');
 
@@ -51,7 +54,7 @@ const wood = material(0x805a42, 0.8);
 const sceneryObjects = [];
 const longWorldObjects = [];
 
-const riverGeometry = new THREE.PlaneGeometry(33, 520, 42, 128);
+const riverGeometry = new THREE.PlaneGeometry(33, 520, isMobile ? 20 : 34, isMobile ? 58 : 96);
 riverGeometry.rotateX(-Math.PI / 2);
 const river = new THREE.Mesh(riverGeometry, waterMaterial);
 river.position.set(0, -0.22, -205);
@@ -817,7 +820,7 @@ let fpsValue = 60;
 let lowFpsTime = 0;
 let highFpsTime = 0;
 let waterUpdateClock = 0;
-let renderScale = Math.min(devicePixelRatio || 1, isMobile ? 1.25 : 1.65);
+let renderScale = Math.min(devicePixelRatio || 1, isMobile ? 0.9 : 1.5);
 let last = performance.now();
 
 function connect() {
@@ -910,9 +913,9 @@ function updateRiver(time) {
 function update(dt, time) {
   state.elapsed += dt;
   waterUpdateClock += dt;
-  if (waterUpdateClock >= 1 / 30) {
+  if (waterUpdateClock >= (isMobile ? 1 / 12 : 1 / 24)) {
     updateRiver(time);
-    waterUpdateClock %= 1 / 30;
+    waterUpdateClock %= (isMobile ? 1 / 12 : 1 / 24);
   }
 
   if (state.running && state.alive) {
@@ -1109,14 +1112,14 @@ function frame(now) {
       lowFpsTime = Math.max(0, lowFpsTime - fpsClock * 0.25);
       highFpsTime = 0;
     }
-    if (lowFpsTime > 3 && renderScale > 0.95) {
-      renderScale = 0.95;
+    if (lowFpsTime > 1.5 && renderScale > 0.65) {
+      renderScale = Math.max(0.65, renderScale - 0.15);
       renderer.setPixelRatio(renderScale);
       renderer.setSize(innerWidth, innerHeight, false);
       lowFpsTime = 0;
       toast('GRÁFICOS AJUSTADOS PARA MAIS FPS');
-    } else if (highFpsTime > 8 && renderScale < Math.min(devicePixelRatio || 1, isMobile ? 1.25 : 1.65)) {
-      renderScale = Math.min(devicePixelRatio || 1, isMobile ? 1.25 : 1.65);
+    } else if (highFpsTime > 12 && renderScale < Math.min(devicePixelRatio || 1, isMobile ? 0.9 : 1.5)) {
+      renderScale = Math.min(devicePixelRatio || 1, isMobile ? 0.9 : 1.5);
       renderer.setPixelRatio(renderScale);
       renderer.setSize(innerWidth, innerHeight, false);
       highFpsTime = 0;
