@@ -5,13 +5,16 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "android:sync": "cap sync android"
+    "android:sync": "cap sync android",
+    "postinstall": "esbuild public/src/main.js --bundle --format=esm --target=es2020 --outfile=public/src/bundle.js"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.1",
     "@capacitor/core": "^6.2.1",
     "express": "^4.21.2",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "three": "0.160.0",
+    "esbuild": "^0.24.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.2.1",
