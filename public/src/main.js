@@ -729,8 +729,27 @@ function startRace() {
   ui.lobby.classList.add('hidden');
   toast('BOA ONDA! DESVIE COM GESTOS');
 }
-document.getElementById('start-game').addEventListener('click', startRace);
-document.getElementById('training-mode').addEventListener('click', startRace);
+document.getElementById('start-game').addEventListener('click', () => {
+  offlineMode = false;
+  if (!network || network.readyState !== WebSocket.OPEN) connect();
+  startRace();
+});
+document.getElementById('training-mode').addEventListener('click', () => {
+  offlineMode = true;
+  clearTimeout(reconnectTimer);
+  if (network) {
+    const oldNetwork = network;
+    network = null;
+    oldNetwork.close();
+  }
+  playerId = null;
+  for (const rider of remotePlayers.values()) scene.remove(rider.mesh);
+  remotePlayers.clear();
+  updateLobbyRoster();
+  setConnection('OFFLINE • JOGO LOCAL', '#55f2a8');
+  startRace();
+  toast('MODO OFFLINE — BOA CORRIDA!');
+});
 document.getElementById('turbo-button').addEventListener('click', turbo);
 document.getElementById('restart').addEventListener('click', () => location.reload());
 
@@ -788,6 +807,7 @@ const defaultServer = 'wss://wave-runner-online.onrender.com/ws';
 const networkUrl = window.WAVE_RUNNER_WS_URL || (nativeApp ? defaultServer : protocol + '://' + location.host + '/ws');
 let network = null;
 let playerId = null;
+let offlineMode = false;
 let reconnectTimer = 0;
 let sendClock = 0;
 let pingClock = 0;
@@ -801,6 +821,7 @@ let renderScale = Math.min(devicePixelRatio || 1, isMobile ? 1.25 : 1.65);
 let last = performance.now();
 
 function connect() {
+  if (offlineMode) return;
   if (network && (network.readyState === WebSocket.CONNECTING || network.readyState === WebSocket.OPEN)) return;
   setConnection('CONECTANDO', '#ffc65c');
   try {
@@ -854,8 +875,12 @@ function connect() {
     network.onclose = () => {
       network = null;
       playerId = null;
-      setConnection('RECONECTANDO', '#ffc65c');
       updateLobbyRoster();
+      if (offlineMode) {
+        setConnection('OFFLINE • JOGO LOCAL', '#55f2a8');
+        return;
+      }
+      setConnection('RECONECTANDO', '#ffc65c');
       clearTimeout(reconnectTimer);
       reconnectTimer = setTimeout(connect, 4500);
     };
@@ -1015,7 +1040,7 @@ function update(dt, time) {
     ui.turbo.classList.toggle('ready', state.bottles >= 5);
     document.getElementById('race-progress').style.width = ((state.distance % 1200) / 12) + '%';
 
-    if (network && network.readyState === WebSocket.OPEN) {
+    if (!offlineMode && network && network.readyState === WebSocket.OPEN) {
       sendClock += dt;
       pingClock += dt;
       if (sendClock >= 0.09) {
