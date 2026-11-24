@@ -558,24 +558,31 @@ for (let i = 0; i < foamCount; i++) {
 waterFoam.instanceMatrix.needsUpdate = true;
 scene.add(waterFoam);
 
-function updateRiverDecor(travel, time) {
+let riverDecorClock = 0;
+function updateRiverDecor(travel, time, dt) {
+  riverDecorClock += dt;
+  const refreshMatrices = riverDecorClock >= (isMobile ? 1 / 20 : 1 / 30);
   for (const set of laneBuoySets) {
     for (let i = 0; i < set.zs.length; i++) {
       set.zs[i] += travel;
       if (set.zs[i] > 14) set.zs[i] -= set.zs.length * 10.5;
     }
-    updateBuoyMatrices(set, time);
+    if (refreshMatrices) updateBuoyMatrices(set, time);
   }
   for (let i = 0; i < foamCount; i++) {
     foamZ[i] += travel * 1.12;
     if (foamZ[i] > 12) foamZ[i] -= foamCount * 7.2;
+    if (!refreshMatrices) continue;
     foamDummy.position.set(foamX[i], -0.16 + Math.sin(time * 2 + i) * 0.012, foamZ[i]);
     foamDummy.rotation.set(0, foamAngle[i] + Math.sin(time + i) * 0.025, 0);
     foamDummy.scale.set(0.75 + (i % 3) * 0.25, 1, 1);
     foamDummy.updateMatrix();
     waterFoam.setMatrixAt(i, foamDummy.matrix);
   }
-  waterFoam.instanceMatrix.needsUpdate = true;
+  if (refreshMatrices) {
+    waterFoam.instanceMatrix.needsUpdate = true;
+    riverDecorClock = 0;
+  }
 }
 
 // Anel reutilizado como efeito visual quando o jet ski especial destrói um obstáculo.
@@ -1221,7 +1228,7 @@ function update(dt, time) {
     updateRiver(time);
     waterUpdateClock %= (isMobile ? 1 / 12 : 1 / 24);
   }
-  updateRiverDecor(state.running && state.alive ? state.speed * dt : 0, time);
+  updateRiverDecor(state.running && state.alive ? state.speed * dt : 0, time, dt);
 
   if (state.running && state.alive) {
     state.distance += state.speed * dt;
