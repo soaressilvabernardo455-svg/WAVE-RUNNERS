@@ -20,14 +20,13 @@ renderer.toneMappingExposure = 1.14;
 // Sombras em tempo real são caras em celulares; manter sombras apenas em telas maiores.
 renderer.shadowMap.enabled = !isMobile;
 renderer.shadowMap.type = THREE.PCFShadowMap;
-if (isMobile) sun.castShadow = false;
 root.appendChild(renderer.domElement);
 renderer.domElement.setAttribute('aria-label', 'Área de jogo Wave Runner');
 
 scene.add(new THREE.HemisphereLight(0xdff8ff, 0x31566b, 2.25));
 const sun = new THREE.DirectionalLight(0xfff3d8, 2.45);
 sun.position.set(-24, 36, 22);
-sun.castShadow = true;
+sun.castShadow = !isMobile;
 sun.shadow.mapSize.set(isMobile ? 512 : 1024, isMobile ? 512 : 1024);
 sun.shadow.camera.left = -42;
 sun.shadow.camera.right = 42;
@@ -443,10 +442,140 @@ function makeRider(boardColor = 0xff7047) {
   return group;
 }
 
+function makeNameTag(name, local = false) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const safeName = String(name || 'SURFISTA').replace(/[<>]/g, '').trim().slice(0, 16) || 'SURFISTA';
+  ctx.shadowColor = '#001b2d';
+  ctx.shadowBlur = 14;
+  ctx.fillStyle = local ? '#07536eef' : '#07394fef';
+  ctx.beginPath();
+  ctx.moveTo(34, 12); ctx.lineTo(478, 12); ctx.quadraticCurveTo(500, 12, 500, 34);
+  ctx.lineTo(500, 94); ctx.quadraticCurveTo(500, 116, 478, 116); ctx.lineTo(34, 116);
+  ctx.quadraticCurveTo(12, 116, 12, 94); ctx.lineTo(12, 34); ctx.quadraticCurveTo(12, 12, 34, 12);
+  ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = local ? '#8cf1ff' : '#59d7ee';
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  ctx.fillStyle = '#f3fcff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 54px Arial, sans-serif';
+  ctx.fillText(safeName, 256, 67, 440);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+  const sprite = new THREE.Sprite(spriteMaterial);
+  sprite.scale.set(local ? 4.5 : 4.1, local ? 1.12 : 1.02, 1);
+  sprite.position.set(0, 3.55, 0);
+  sprite.renderOrder = 8;
+  return sprite;
+}
+function setRiderName(rider, name, local = false) {
+  const old = rider.userData.nameSprite;
+  if (old) {
+    rider.remove(old);
+    old.material.map?.dispose();
+    old.material.dispose();
+  }
+  const sprite = makeNameTag(name, local);
+  rider.add(sprite);
+  rider.userData.nameSprite = sprite;
+}
+function safePlayerName(value) {
+  return String(value || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16) || 'SURFISTA';
+}
+
 const LANES = [-5.35, 0, 5.35];
 const player = makeRider();
 scene.add(player);
 player.position.set(0, 0, 3);
+
+const laneBuoySets = [];
+function createBuoyLine(x) {
+  const count = 44;
+  const body = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(0.46, 10, 8),
+    new THREE.MeshStandardMaterial({ color: 0xf3f7f4, roughness: 0.58 }),
+    count
+  );
+  const stripeGeometry = new THREE.TorusGeometry(0.36, 0.075, 6, 14);
+  stripeGeometry.rotateX(Math.PI / 2);
+  const stripeMaterial = new THREE.MeshBasicMaterial({ color: 0xf05a4f });
+  const upperStripe = new THREE.InstancedMesh(stripeGeometry, stripeMaterial, count);
+  const lowerStripe = new THREE.InstancedMesh(stripeGeometry, stripeMaterial, count);
+  scene.add(body, upperStripe, lowerStripe);
+  const set = { x, body, upperStripe, lowerStripe, zs: Array.from({ length: count }, (_, i) => -16 - i * 10.5) };
+  laneBuoySets.push(set);
+  updateBuoyMatrices(set, 0);
+}
+function updateBuoyMatrices(set, time) {
+  const dummy = new THREE.Object3D();
+  for (let i = 0; i < set.zs.length; i++) {
+    const bob = Math.sin(time * 2.4 + i * 0.7) * 0.035;
+    dummy.position.set(set.x, 0.12 + bob, set.zs[i]);
+    dummy.rotation.set(0, 0, 0);
+    dummy.scale.set(1, 0.92, 1);
+    dummy.updateMatrix();
+    set.body.setMatrixAt(i, dummy.matrix);
+    dummy.position.y += 0.13;
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    set.upperStripe.setMatrixAt(i, dummy.matrix);
+    dummy.position.y -= 0.26;
+    dummy.updateMatrix();
+    set.lowerStripe.setMatrixAt(i, dummy.matrix);
+  }
+  set.body.instanceMatrix.needsUpdate = true;
+  set.upperStripe.instanceMatrix.needsUpdate = true;
+  set.lowerStripe.instanceMatrix.needsUpdate = true;
+}
+createBuoyLine((LANES[0] + LANES[1]) / 2);
+createBuoyLine((LANES[1] + LANES[2]) / 2);
+
+const foamCount = isMobile ? 36 : 60;
+const foamGeometry = new THREE.PlaneGeometry(0.13, 2.8);
+foamGeometry.rotateX(-Math.PI / 2);
+const foamMaterial = new THREE.MeshBasicMaterial({ color: 0xcaf8ff, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide });
+const waterFoam = new THREE.InstancedMesh(foamGeometry, foamMaterial, foamCount);
+const foamZ = [];
+const foamX = [];
+const foamAngle = [];
+const foamDummy = new THREE.Object3D();
+for (let i = 0; i < foamCount; i++) {
+  foamX[i] = -13.5 + ((i * 37) % 270) / 10;
+  foamZ[i] = -20 - i * 7.2;
+  foamAngle[i] = ((i % 7) - 3) * 0.09;
+  foamDummy.position.set(foamX[i], -0.01, foamZ[i]);
+  foamDummy.rotation.set(-Math.PI / 2, foamAngle[i], 0);
+  foamDummy.scale.set(0.75 + (i % 3) * 0.25, 1, 1);
+  foamDummy.updateMatrix();
+  waterFoam.setMatrixAt(i, foamDummy.matrix);
+}
+waterFoam.instanceMatrix.needsUpdate = true;
+scene.add(waterFoam);
+
+function updateRiverDecor(travel, time) {
+  for (const set of laneBuoySets) {
+    for (let i = 0; i < set.zs.length; i++) {
+      set.zs[i] += travel;
+      if (set.zs[i] > 14) set.zs[i] -= set.zs.length * 10.5;
+    }
+    updateBuoyMatrices(set, time);
+  }
+  for (let i = 0; i < foamCount; i++) {
+    foamZ[i] += travel * 1.12;
+    if (foamZ[i] > 12) foamZ[i] -= foamCount * 7.2;
+    foamDummy.position.set(foamX[i], -0.015 + Math.sin(time * 2 + i) * 0.012, foamZ[i]);
+    foamDummy.rotation.set(-Math.PI / 2, foamAngle[i] + Math.sin(time + i) * 0.025, 0);
+    foamDummy.updateMatrix();
+    waterFoam.setMatrixAt(i, foamDummy.matrix);
+  }
+  waterFoam.instanceMatrix.needsUpdate = true;
+}
 
 // Anel reutilizado como efeito visual quando o jet ski especial destrói um obstáculo.
 const smashFlash = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.1, 8, 24), new THREE.MeshBasicMaterial({ color: 0x72f8ff, transparent: true, opacity: 0.9, depthWrite: false }));
@@ -456,6 +585,10 @@ scene.add(smashFlash);
 let smashFlashTime = 0;
 
 const remotePlayers = new Map();
+let roomRoster = [];
+let roomCapacity = 100;
+let selectedRoom = { id: 'river-rush-3', name: 'Rio público', password: '', capacity: 100 };
+let manualDisconnect = false;
 
 // Reusable wake particles. Kept as a tiny pool to avoid allocating meshes every frame.
 const wakeParticles = [];
@@ -543,7 +676,7 @@ function addCoin(lane, z) {
 }
 function addObstacle(lane, z, jet) {
   const mesh = makeWatercraft(jet);
-  mesh.scale.setScalar(jet ? 1.28 : 1.38);
+  mesh.scale.setScalar(jet ? 1.9 : 2.05);
   mesh.position.set(LANES[lane], 0, z);
   scene.add(mesh);
   obstacles.push({ mesh, z, lane, jet, phase: Math.random() * 7 });
@@ -568,7 +701,9 @@ try {
 const state = {
   lane: 1, x: 0, targetX: 0, jumpY: 0, vy: 0, jumping: false, slide: 0, lean: 0,
   speed: 22, distance: 0, coins: savedWallet, runCoins: 0, bottles: 0,
-  turboTime: 0, specialJetski: savedSpecialJetSki, alive: true, running: false, elapsed: 0
+  turboTime: 0, specialJetski: savedSpecialJetSki, alive: true, running: false, elapsed: 0,
+  playerName: (() => { try { return (localStorage.getItem('wave_runner_player_name') || 'SURFISTA').replace(/[<>]/g, '').trim().slice(0, 16) || 'SURFISTA'; } catch { return 'SURFISTA'; } })(),
+  jumpTime: 0, jumpDuration: 1.4
 };
 const ui = {
   ping: document.getElementById('ping'),
@@ -602,6 +737,21 @@ function toast(message) {
   ui.toast.classList.add('show');
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => ui.toast.classList.remove('show'), 1450);
+}
+
+setRiderName(player, state.playerName, true);
+const playerNameInput = document.getElementById('player-name-input');
+if (playerNameInput) {
+  playerNameInput.value = state.playerName;
+  playerNameInput.addEventListener('input', () => {
+    state.playerName = safePlayerName(playerNameInput.value);
+    try { localStorage.setItem('wave_runner_player_name', state.playerName); } catch {}
+    setRiderName(player, state.playerName, true);
+    if (network && network.readyState === WebSocket.OPEN) {
+      network.send(JSON.stringify({ type: 'rename', name: state.playerName }));
+    }
+    updateLobbyRoster();
+  });
 }
 
 const SPECIAL_JETSKI_PRICE = 100;
@@ -686,15 +836,18 @@ function setConnection(label, color) {
   ui.dot.style.boxShadow = '0 0 10px ' + color;
 }
 function updateLobbyRoster() {
-  const count = Math.min(3, remotePlayers.size + 1);
-  ui.lobbyCount.textContent = count + ' / 3 PILOTOS NA SALA';
-  const labels = ['VOCÊ', 'PILOTO 02', 'PILOTO 03'];
+  const roster = [{ id: playerId || 'local', name: state.playerName }, ...roomRoster.filter(p => p.id !== playerId)];
+  const total = Math.max(1, roomRoster.length || remotePlayers.size + 1);
+  ui.lobbyCount.textContent = total + ' / ' + roomCapacity + ' PILOTOS NA SALA';
   ui.lobbySlots.innerHTML = '';
-  for (let i = 0; i < 3; i++) {
+  const visibleCount = Math.min(8, Math.max(3, total));
+  for (let i = 0; i < visibleCount; i++) {
+    const person = roster[i];
     const slot = document.createElement('div');
-    slot.className = 'lobby-slot' + (i < count ? ' is-filled' : '');
-    slot.innerHTML = '<span class="slot-avatar">' + (i === 0 ? 'W' : '✦') + '</span><span>' +
-      (i < count ? labels[i] : 'AGUARDANDO PILOTO') + '</span><i></i>';
+    slot.className = 'lobby-slot' + (person ? ' is-filled' : '');
+    slot.innerHTML = '<span class="slot-avatar">' + (person ? 'W' : '✦') + '</span><span class="slot-name"></span><i></i>';
+    if (person) slot.querySelector('.slot-name').textContent = person.name || 'SURFISTA';
+    else slot.querySelector('.slot-name').textContent = 'AGUARDANDO PILOTO';
     ui.lobbySlots.appendChild(slot);
   }
 }
@@ -705,17 +858,19 @@ function changeLane(direction) {
   state.lane = THREE.MathUtils.clamp(state.lane + direction, 0, 2);
   if (oldLane !== state.lane) {
     state.targetX = LANES[state.lane];
-    state.lean = direction * -0.34;
+    state.lean = direction * -0.25;
   }
 }
 function jump() {
   if (!state.jumping && state.running && state.alive) {
-    state.vy = 8.1;
+    state.vy = 14;
+    state.jumpTime = 0;
+    state.jumpDuration = 1.4;
     state.jumping = true;
   }
 }
 function slide() {
-  if (state.running && state.alive) state.slide = 0.72;
+  if (state.running && state.alive) state.slide = 0.82;
 }
 function turbo() {
   if (state.running && state.bottles >= 5 && state.turboTime <= 0) {
@@ -739,6 +894,7 @@ document.getElementById('start-game').addEventListener('click', () => {
 });
 document.getElementById('training-mode').addEventListener('click', () => {
   offlineMode = true;
+  manualDisconnect = true;
   clearTimeout(reconnectTimer);
   if (network) {
     const oldNetwork = network;
@@ -795,12 +951,20 @@ addEventListener('keydown', event => {
 });
 addEventListener('keyup', event => heldKeys.delete(event.code));
 
-function addRemote(id) {
-  if (remotePlayers.has(id)) return;
+function addRemote(id, name = 'SURFISTA') {
+  if (remotePlayers.has(id)) {
+    const existing = remotePlayers.get(id);
+    if (existing.name !== name) {
+      existing.name = name;
+      setRiderName(existing.mesh, name);
+    }
+    return;
+  }
   const mesh = makeRider(0x33c8e2);
   mesh.scale.setScalar(0.91);
+  setRiderName(mesh, name);
   scene.add(mesh);
-  remotePlayers.set(id, { mesh, target: new THREE.Vector3(0, 0, -5), distance: 0 });
+  remotePlayers.set(id, { mesh, name, target: new THREE.Vector3(0, 0, -5), distance: 0 });
   updateLobbyRoster();
 }
 
@@ -826,35 +990,55 @@ let last = performance.now();
 function connect() {
   if (offlineMode) return;
   if (network && (network.readyState === WebSocket.CONNECTING || network.readyState === WebSocket.OPEN)) return;
+  manualDisconnect = false;
   setConnection('CONECTANDO', '#ffc65c');
   try {
-    network = new WebSocket(networkUrl);
-    network.onopen = () => {
-      network.send(JSON.stringify({ type: 'join', room: 'river-rush-3' }));
+    const socket = new WebSocket(networkUrl);
+    network = socket;
+    socket.onopen = () => {
+      socket.send(JSON.stringify({
+        type: 'join',
+        room: selectedRoom.id,
+        password: selectedRoom.password || '',
+        name: state.playerName
+      }));
     };
-    network.onmessage = event => {
+    socket.onmessage = event => {
       let data;
       try { data = JSON.parse(event.data); } catch { return; }
       if (data.type === 'welcome') {
         playerId = data.id;
+        roomCapacity = data.capacity || selectedRoom.capacity || 100;
         setConnection('ONLINE', '#55f2a8');
         updateLobbyRoster();
       }
-      if (data.type === 'room-full') {
-        setConnection('SALA CHEIA', '#ff9b66');
-        toast('SALA CHEIA — TENTE NOVAMENTE');
-        network.close();
+      if (['room-full', 'room-not-found', 'wrong-password'].includes(data.type)) {
+        manualDisconnect = true;
+        const messages = {
+          'room-full': 'ESSA SALA ESTÁ CHEIA',
+          'room-not-found': 'CÓDIGO DE SALA NÃO ENCONTRADO',
+          'wrong-password': 'SENHA INCORRETA'
+        };
+        setConnection(data.type === 'room-full' ? 'SALA CHEIA' : 'FALHA AO ENTRAR', '#ff9b66');
+        toast(messages[data.type]);
+        socket.close();
         return;
       }
       if (data.type === 'pong') {
         ui.ping.textContent = Math.max(0, Math.round(performance.now() - data.sentAt)) + ' ms';
       }
       if (data.type === 'snapshot') {
+        const players = data.players || [];
+        roomCapacity = data.capacity || roomCapacity;
+        roomRoster = players.map(p => ({ id: p.id, name: p.name || 'SURFISTA' }));
+        const visibleRemotes = players
+          .filter(p => p.id !== playerId)
+          .sort((a, b) => Math.abs((a.distance || 0) - state.distance) - Math.abs((b.distance || 0) - state.distance))
+          .slice(0, isMobile ? 5 : 10);
         const ids = new Set();
-        for (const remote of data.players || []) {
-          if (remote.id === playerId) continue;
+        for (const remote of visibleRemotes) {
           ids.add(remote.id);
-          addRemote(remote.id);
+          addRemote(remote.id, remote.name || 'SURFISTA');
           const rider = remotePlayers.get(remote.id);
           const relative = THREE.MathUtils.clamp((remote.distance || 0) - state.distance, -135, 135);
           rider.target.set(
@@ -871,30 +1055,121 @@ function connect() {
           }
         }
         updateLobbyRoster();
-        const count = Math.min(3, (data.players || []).length);
-        ui.lobbyCount.textContent = count + ' / 3 PILOTOS NA SALA';
       }
     };
-    network.onclose = () => {
-      network = null;
+    socket.onclose = () => {
+      if (network === socket) network = null;
       playerId = null;
+      roomRoster = [];
       updateLobbyRoster();
       if (offlineMode) {
         setConnection('OFFLINE • JOGO LOCAL', '#55f2a8');
+        manualDisconnect = false;
+        return;
+      }
+      if (manualDisconnect) {
+        manualDisconnect = false;
         return;
       }
       setConnection('RECONECTANDO', '#ffc65c');
       clearTimeout(reconnectTimer);
       reconnectTimer = setTimeout(connect, 4500);
     };
-    network.onerror = () => {
-      if (network) network.close();
+    socket.onerror = () => {
+      if (socket.readyState !== WebSocket.CLOSED) socket.close();
     };
   } catch {
     setConnection('OFFLINE', '#ff9b66');
   }
 }
-connect();
+
+setConnection('PRONTO PARA JOGAR', '#55f2a8');
+
+function apiBaseUrl() {
+  return nativeApp ? 'https://wave-runner-online.onrender.com' : '';
+}
+async function refreshPublicRooms() {
+  const list = document.getElementById('public-rooms-list');
+  if (!list) return;
+  list.textContent = 'CARREGANDO SALAS PÚBLICAS...';
+  try {
+    const response = await fetch(apiBaseUrl() + '/api/rooms');
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Falha ao buscar salas');
+    list.replaceChildren();
+    const rooms = data.rooms || [];
+    if (!rooms.length) {
+      list.textContent = 'Nenhuma sala pública encontrada. Crie uma nova!';
+      return;
+    }
+    for (const room of rooms) {
+      const row = document.createElement('div');
+      row.className = 'public-room-entry';
+      const info = document.createElement('div');
+      info.className = 'public-room-info';
+      const name = document.createElement('strong');
+      name.textContent = room.name;
+      const details = document.createElement('small');
+      details.textContent = room.players + ' / ' + room.capacity + ' jogadores • PÚBLICA';
+      info.append(name, details);
+      const join = document.createElement('button');
+      join.type = 'button';
+      join.textContent = 'ENTRAR';
+      join.addEventListener('click', () => enterRoom({ id: room.id, name: room.name, capacity: room.capacity, password: '' }));
+      row.append(info, join);
+      list.append(row);
+    }
+  } catch (error) {
+    list.textContent = 'Não foi possível carregar as salas agora. Tente atualizar.';
+  }
+}
+function enterRoom(room) {
+  selectedRoom = { id: room.id, name: room.name || 'Sala', password: room.password || '', capacity: room.capacity || 100 };
+  offlineMode = false;
+  document.getElementById('rooms-modal')?.classList.add('hidden');
+  connect();
+  startRace();
+  toast('ENTRANDO EM ' + selectedRoom.name.toUpperCase());
+}
+async function createRoom() {
+  const name = document.getElementById('room-name-input')?.value.trim() || 'Minha sala';
+  const visibility = document.getElementById('room-visibility')?.value || 'public';
+  const password = document.getElementById('room-password-input')?.value || '';
+  if (visibility === 'private' && password.trim().length < 3) {
+    toast('A SENHA PRECISA TER PELO MENOS 3 CARACTERES');
+    return;
+  }
+  try {
+    const response = await fetch(apiBaseUrl() + '/api/rooms', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, visibility, password })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Não foi possível criar a sala');
+    selectedRoom = { id: data.id, name: data.name, password: password, capacity: data.capacity || 100 };
+    enterRoom(selectedRoom);
+    toast((visibility === 'private' ? 'SALA PRIVADA • CÓDIGO ' : 'SALA PÚBLICA • CÓDIGO ') + data.id);
+  } catch (error) {
+    toast(error.message || 'ERRO AO CRIAR SALA');
+  }
+}
+function joinPrivateRoom() {
+  const code = document.getElementById('private-room-code')?.value.trim();
+  const password = document.getElementById('private-room-password')?.value || '';
+  if (!code) { toast('DIGITE O CÓDIGO DA SALA'); return; }
+  enterRoom({ id: code, name: 'Sala privada', password, capacity: 100 });
+}
+document.getElementById('rooms-open')?.addEventListener('click', () => {
+  document.getElementById('rooms-modal')?.classList.remove('hidden');
+  refreshPublicRooms();
+});
+document.getElementById('rooms-close')?.addEventListener('click', () => document.getElementById('rooms-modal')?.classList.add('hidden'));
+document.getElementById('rooms-refresh')?.addEventListener('click', refreshPublicRooms);
+document.getElementById('room-create')?.addEventListener('click', createRoom);
+document.getElementById('room-join-private')?.addEventListener('click', joinPrivateRoom);
+document.getElementById('room-visibility')?.addEventListener('change', event => {
+  document.getElementById('room-password-row')?.classList.toggle('hidden', event.target.value !== 'private');
+});
 
 function updateRiver(time) {
   const positions = riverGeometry.attributes.position;
@@ -917,11 +1192,12 @@ function update(dt, time) {
     updateRiver(time);
     waterUpdateClock %= (isMobile ? 1 / 12 : 1 / 24);
   }
+  updateRiverDecor(state.running && state.alive ? state.speed * dt : 0, time);
 
   if (state.running && state.alive) {
     state.distance += state.speed * dt;
     // Lateral target eases toward the selected lane: no hard teleport.
-    state.x = THREE.MathUtils.damp(state.x, state.targetX, 7.2, dt);
+    state.x = THREE.MathUtils.damp(state.x, state.targetX, 15.5, dt);
     state.x = THREE.MathUtils.clamp(state.x, LANES[0], LANES[2]);
     player.position.x = state.x;
     player.position.z = 3;
@@ -930,11 +1206,14 @@ function update(dt, time) {
     // Jump physics use an independent height value. The water bob is visual only,
     // so it cannot accumulate every frame and push the rider out of the camera.
     if (state.jumping) {
-      state.vy -= 18.5 * dt;
+      state.jumpTime += dt;
+      state.vy -= 20 * dt;
       state.jumpY = Math.max(0, state.jumpY + state.vy * dt);
       if (state.jumpY <= 0) {
+        state.jumpY = 0;
         state.vy = 0;
         state.jumping = false;
+        state.jumpTime = 0;
       }
     }
     player.position.y = state.jumpY + Math.sin(time * 6.2) * 0.022;
@@ -943,14 +1222,17 @@ function update(dt, time) {
     if (body) {
       const slideFactor = state.slide > 0 ? 0.76 : 1;
       body.scale.y = THREE.MathUtils.damp(body.scale.y, slideFactor, 18, dt);
-      body.position.y = THREE.MathUtils.damp(body.position.y, state.slide > 0 ? -0.22 : 0, 18, dt);
+      body.position.y = THREE.MathUtils.damp(body.position.y, state.slide > 0 ? -0.06 : 0, 18, dt);
+      body.rotation.x = THREE.MathUtils.damp(body.rotation.x, state.slide > 0 ? -1.18 : 0, 16, dt);
       const armSwing = Math.sin(time * 10) * (state.jumpY > 0.1 ? 0.34 : 0.1);
       player.userData.armPivots?.forEach((arm, i) => { arm.rotation.x = armSwing * (i ? -1 : 1); });
       player.userData.legPivots?.forEach((leg, i) => { leg.rotation.x = Math.sin(time * 9 + i * Math.PI) * (state.jumpY > 0.1 ? 0.32 : 0.07); });
     }
     state.lean = THREE.MathUtils.damp(state.lean, 0, 6.5, dt);
     player.rotation.z = THREE.MathUtils.damp(player.rotation.z, state.lean, 12, dt);
-    player.rotation.x = THREE.MathUtils.damp(player.rotation.x, Math.sin(time * 7) * 0.018, 3, dt);
+    const flipProgress = state.jumping ? THREE.MathUtils.clamp(state.jumpTime / state.jumpDuration, 0, 1) : 0;
+    const flipRotation = state.jumping ? flipProgress * Math.PI * 2 : Math.sin(time * 7) * 0.018;
+    player.rotation.x = THREE.MathUtils.damp(player.rotation.x, flipRotation, state.jumping ? 24 : 3, dt);
 
     for (let i = 0; i < wakeParticles.length; i++) {
       const puff = wakeParticles[i];
@@ -1008,7 +1290,7 @@ function update(dt, time) {
           state.runCoins++;
           saveWallet();
           if (!ui.shop.classList.contains('hidden')) refreshShop();
-        } else if (group === obstacles && dz < 2.2 && dx < 1.9) {
+        } else if (group === obstacles && dz < (object.jet ? 3.0 : 4.35) && dx < (object.jet ? 1.9 : 2.15)) {
           if (state.specialJetski) {
             smashFlash.position.set(object.mesh.position.x, 0.85, object.z);
             smashFlash.scale.setScalar(0.38);
@@ -1019,8 +1301,11 @@ function update(dt, time) {
             object.mesh.visible = false;
             toast('JET SKI ESPECIAL: OBSTÁCULO DESTRUÍDO!');
           } else {
-            finishRace('Você atingiu um obstáculo. Desvie para as outras faixas na próxima corrida.');
-            break;
+            const clearanceHeight = object.jet ? 2.2 : 3.05;
+            if (state.jumpY < clearanceHeight) {
+              finishRace('Você atingiu um obstáculo. Pule no momento certo para passar por cima!');
+              break;
+            }
           }
         }
 
@@ -1141,7 +1426,7 @@ setTimeout(() => {
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, matchMedia('(max-width: 700px)').matches ? 0.9 : 1.5));
   renderer.setSize(innerWidth, innerHeight);
-  renderScale = Math.min(devicePixelRatio || 1, matchMedia('(max-width: 700px)').matches ? 1.25 : 1.65);
-  renderer.setPixelRatio(renderScale);
+  renderScale = Math.min(devicePixelRatio || 1, matchMedia('(max-width: 700px)').matches ? 0.9 : 1.5);
 });
