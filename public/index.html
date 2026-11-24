@@ -27,19 +27,19 @@
     <div class="lobby-eyebrow"><span class="eyebrow-line"></span> CORRIDA MULTIPLAYER <span class="eyebrow-line"></span></div>
     <div class="lobby-title">WAVE<span>RUNNER</span></div>
     <div class="lobby-subtitle">RIVER RUSH <i>•</i> TEMPORADA 01</div>
-    <p class="lobby-copy">Desça pelo rio, passe pelas casas e pontes, desvie dos barcos e colete garrafas para liberar o turbo.</p>
+    <p class="lobby-copy">Desça pelo rio, desvie dos obstáculos e dispute a corrida com outros surfistas.</p>
+    <div class="nickname-row">
+      <label for="player-name-input">NOME DO SURFISTA</label>
+      <input id="player-name-input" type="text" maxlength="16" autocomplete="nickname" placeholder="Digite seu nome">
+    </div>
     <div class="lobby-panel">
-      <div class="lobby-panel-head"><div><small>MODO DE JOGO</small><strong>CORRIDA NO RIO</strong></div><span class="mode-tag">3 PILOTOS</span></div>
-      <div class="lobby-online"><span class="online-pulse"></span><span id="lobby-status">CONECTANDO</span><b id="lobby-player-count">1 / 3 PILOTOS NA SALA</b></div>
+      <div class="lobby-panel-head"><div><small>MODO DE JOGO</small><strong>CORRIDA NO RIO</strong></div><span class="mode-tag">ATÉ 100 PILOTOS</span></div>
+      <div class="lobby-online"><span class="online-pulse"></span><span id="lobby-status">CONECTANDO</span><b id="lobby-player-count">1 / 100 PILOTOS NA SALA</b></div>
       <div id="lobby-slots" class="lobby-slots"></div>
       <button id="start-game" class="start-button">JOGAR ONLINE • MULTIPLAYER <span>›</span></button>
       <button id="training-mode" class="training-button">JOGAR OFFLINE • SEM MULTIPLAYER</button>
+      <button id="rooms-open" class="training-button">SALAS PÚBLICAS / PRIVADAS</button>
       <button id="shop-open-lobby" class="training-button shop-lobby-button">ABRIR LOJA DE JET SKI</button>
-    </div>
-    <div class="lobby-feature-grid">
-      <div class="lobby-feature"><b>03</b><span>FAIXAS</span><small>DESVIO RÁPIDO</small></div>
-      <div class="lobby-feature"><b>05</b><span>GARRAFAS</span><small>LIBERAM O TURBO</small></div>
-      <div class="lobby-feature"><b>3D</b><span>RIO URBANO</span><small>PONTES E PIERS</small></div>
     </div>
     <div class="lobby-controls"><span>↔ ARRASTE PARA TROCAR DE FAIXA</span><span>↑ PULE</span><span>↓ DESLIZE</span></div>
     <div class="lobby-footer">WAVE RUNNER <i>—</i> OCEAN TO RIVER</div>
@@ -47,7 +47,7 @@
 </section>
 
 <section class="race-hud">
-  <div class="position-card"><small>SUA POSIÇÃO</small><strong id="position">1<sup>º</sup><span>/3</span></strong></div>
+  <div class="position-card"><small>SUA POSIÇÃO</small><strong id="position">1<sup>º</sup><span>/100</span></strong></div>
   <div class="race-center"><div class="race-label">DISTÂNCIA <b id="distance">0 m</b></div><div class="progress-track"><i id="race-progress"></i></div><div class="race-players"><span>VOCÊ</span><span>RIVAL 02</span><span>RIVAL 03</span></div></div>
   <div class="coin-card"><span class="coin-symbol">◆</span><b id="coins">000</b><small>MOEDAS</small></div>
 </section>
@@ -81,6 +81,36 @@
     <button id="shop-close" class="shop-close">VOLTAR AO JOGO</button>
   </div>
 </section>
+
+<section id="rooms-modal" class="modal hidden">
+  <div class="modal-card rooms-card">
+    <div class="finish-kicker">CENTRAL DE CORRIDAS</div>
+    <h1>SALAS</h1>
+    <label class="room-field">NOME DA SALA
+      <input id="room-name-input" type="text" maxlength="24" placeholder="Ex.: Equipe das ondas">
+    </label>
+    <label class="room-field">TIPO DE SALA
+      <select id="room-visibility">
+        <option value="public">PÚBLICA — QUALQUER UM PODE ENTRAR</option>
+        <option value="private">PRIVADA — PRECISA DE SENHA</option>
+      </select>
+    </label>
+    <label id="room-password-row" class="room-field hidden">SENHA DA SALA
+      <input id="room-password-input" type="password" maxlength="24" placeholder="Crie uma senha">
+    </label>
+    <button id="room-create" class="room-primary-button">CRIAR SALA</button>
+    <div class="public-room-heading"><strong>SALAS PÚBLICAS</strong><button id="rooms-refresh" type="button">ATUALIZAR</button></div>
+    <div id="public-rooms-list" class="public-rooms-list">Abra para procurar salas públicas.</div>
+    <div class="private-room-join">
+      <strong>ENTRAR EM SALA PRIVADA</strong>
+      <input id="private-room-code" type="text" maxlength="32" placeholder="Código da sala">
+      <input id="private-room-password" type="password" maxlength="24" placeholder="Senha da sala">
+      <button id="room-join-private" type="button">ENTRAR COM CÓDIGO E SENHA</button>
+    </div>
+    <button id="rooms-close" class="shop-close" type="button">VOLTAR AO LOBBY</button>
+  </div>
+</section>
+
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>
